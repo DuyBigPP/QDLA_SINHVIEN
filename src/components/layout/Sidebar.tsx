@@ -10,18 +10,29 @@ import {
   SidebarMenuButton,
   SidebarRail,
 } from "@/components/ui/sidebar"
-import { menuItems } from "@/config/menu"
-import { LucideLayoutDashboard, ChevronRight } from "lucide-react"
+import { getFilteredMenuItems } from "@/config/menu"
+import { useAuth } from "@/context/AuthContext"
+import { LucideLayoutDashboard, ChevronRight, LogOut } from "lucide-react"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { Button } from "@/components/ui/button"
 
 export function AdminSidebar() {
   const location = useLocation()
   const navigate = useNavigate()
+  const { user, logout } = useAuth()
   // State to control which menu with children is open 
   const [openSubmenu, setOpenSubmenu] = React.useState<string | null>(null)
 
+  // Get filtered menu items based on user role
+  const filteredMenuItems = getFilteredMenuItems(user?.role)
+
   const toggleSubmenu = (path: string) => {
     setOpenSubmenu((prev) => (prev === path ? null : path))
+  }
+
+  const handleLogout = () => {
+    logout()
+    navigate('/login')
   }
 
   return (
@@ -41,10 +52,9 @@ export function AdminSidebar() {
           </div>
         </div>
       </SidebarHeader>
-      {/* <SidebarSeparator /> */}
-      <SidebarContent className="p-2">
+      {/* <SidebarSeparator /> */}      <SidebarContent className="p-2">
         <SidebarMenu>
-          {menuItems.map((item) => {
+          {filteredMenuItems.map((item) => {
             if (item.children) {
               return (
                 <SidebarMenuItem key={item.path}>
@@ -101,17 +111,28 @@ export function AdminSidebar() {
             )
           })}
         </SidebarMenu>
-      </SidebarContent>
-      <SidebarFooter className="mt-auto border-t border-border p-4">
-        <div className="flex items-center gap-2">
-          <Avatar className="h-8 w-8">
-            <AvatarImage src="/placeholder.svg?height=32&width=32" alt="User" />
-            <AvatarFallback>U</AvatarFallback>
-          </Avatar>
-          <div className="flex flex-col">
-            <span className="text-sm font-medium">Admin User</span>
-            <span className="text-xs text-muted-foreground">admin@example.com</span>
+      </SidebarContent>      <SidebarFooter className="mt-auto border-t border-border p-4">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <Avatar className="h-8 w-8">
+              <AvatarImage src="/placeholder.svg?height=32&width=32" alt="User" />
+              <AvatarFallback>{user?.name.charAt(0) || 'U'}</AvatarFallback>
+            </Avatar>
+            <div className="flex flex-col">
+              <span className="text-sm font-medium">{user?.name}</span>
+              <span className="text-xs text-muted-foreground">
+                {user?.role === 'class_leader' ? 'Lớp trưởng' : 'Sinh viên'}
+              </span>
+            </div>
           </div>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={handleLogout}
+            className="h-8 w-8 p-0"
+          >
+            <LogOut className="h-4 w-4" />
+          </Button>
         </div>
       </SidebarFooter>
       <SidebarRail />
