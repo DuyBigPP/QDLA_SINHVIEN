@@ -25,7 +25,7 @@ import {
 const mockStudentData = {
   student: {
     id: 'SV001',
-    name: 'Nguyễn Văn A',
+    name: 'Đạt',
     email: 'student@example.com',
     phone: '0123456789',
     address: '123 Đường ABC, Quận 1, TP.HCM',
@@ -82,7 +82,7 @@ const mockStudentData = {
   },
   classLeader: {
     id: 'SV002',
-    name: 'Trần Thị B',
+    name: 'Duy',
     email: 'leader@example.com',
     phone: '0987654321',
     address: '456 Đường XYZ, Quận 3, TP.HCM',

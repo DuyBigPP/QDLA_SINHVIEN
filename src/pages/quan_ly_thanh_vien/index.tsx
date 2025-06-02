@@ -40,7 +40,7 @@ const mockStudents: Student[] = [
   {
     id: '1',
     studentCode: 'SV001',
-    fullName: 'Nguyễn Văn A',
+    fullName: 'Đạt',
     email: 'student@example.com',
     phone: '0123456789',
     dateOfBirth: new Date('2002-05-15'),
@@ -58,7 +58,7 @@ const mockStudents: Student[] = [
   {
     id: '2',
     studentCode: 'SV002',
-    fullName: 'Trần Thị B',
+    fullName: 'Duy',
     email: 'leader@example.com',
     phone: '0987654321',
     dateOfBirth: new Date('2002-03-20'),

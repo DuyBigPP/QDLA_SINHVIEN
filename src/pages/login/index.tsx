@@ -9,7 +9,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert'
 import { LogIn } from 'lucide-react'
 
 const Login = () => {
-  const [email, setEmail] = useState('')
+  const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
@@ -22,15 +22,20 @@ const Login = () => {
     setLoading(true)
     setError('')
 
-    const success = login(email, password)
-    
-    if (success) {
-      navigate('/student-info')
-    } else {
-      setError('Email hoặc mật khẩu không đúng')
+    try {
+      const result = await login(username, password)
+      
+      if (result.success) {
+        navigate('/student-info')
+      } else {
+        setError(result.message)
+      }
+    } catch (error) {
+      console.error('Login error:', error)
+      setError('Đã xảy ra lỗi trong quá trình đăng nhập')
+    } finally {
+      setLoading(false)
     }
-    
-    setLoading(false)
   }
 
   return (
@@ -54,15 +59,14 @@ const Login = () => {
                 <AlertDescription>{error}</AlertDescription>
               </Alert>
             )}
-            
-            <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
+              <div className="space-y-2">
+              <Label htmlFor="username">Tên đăng nhập</Label>
               <Input
-                id="email"
-                type="email"
-                placeholder="Nhập email của bạn"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
+                id="username"
+                type="text"
+                placeholder="Nhập tên đăng nhập"
+                value={username}
+                onChange={(e) => setUsername(e.target.value)}
                 required
               />
             </div>
@@ -77,12 +81,11 @@ const Login = () => {
                 onChange={(e) => setPassword(e.target.value)}
                 required
               />
-            </div>
-
-            <div className="text-sm text-muted-foreground space-y-1">
+            </div>            <div className="text-sm text-muted-foreground space-y-1">
               <p><strong>Tài khoản demo:</strong></p>
-              <p>Sinh viên: student@example.com / 123456</p>
-              <p>Lớp trưởng: leader@example.com / 123456</p>
+              <p>Sinh viên: student / 123456</p>
+              <p>Lớp trưởng: leader / 123456</p>
+              <p><em>Hoặc sử dụng tài khoản thật từ API</em></p>
             </div>
           </CardContent>
           

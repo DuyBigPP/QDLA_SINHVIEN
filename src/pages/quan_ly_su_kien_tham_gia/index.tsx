@@ -56,12 +56,12 @@ const mockEvents: Event[] = [
     currentParticipants: 35,
     status: 'upcoming',
     createdBy: '2',
-    creatorName: 'Trần Thị B',
+    creatorName: 'Duy',
     participants: [
       {
         id: '1',
         studentId: '1',
-        studentName: 'Nguyễn Văn A',
+        studentName: 'Đạt',
         email: 'student@example.com',
         registeredAt: new Date('2024-03-20'),
         status: 'registered'
@@ -89,12 +89,12 @@ const mockEvents: Event[] = [
     currentParticipants: 78,
     status: 'upcoming',
     createdBy: '2',
-    creatorName: 'Trần Thị B',
+    creatorName: 'Duy',
     participants: [
       {
         id: '3',
         studentId: '1',
-        studentName: 'Nguyễn Văn A',
+        studentName: 'Đạt',
         email: 'student@example.com',
         registeredAt: new Date('2024-03-25'),
         status: 'registered'
@@ -114,7 +114,7 @@ const mockEvents: Event[] = [
     currentParticipants: 22,
     status: 'completed',
     createdBy: '2',
-    creatorName: 'Trần Thị B',
+    creatorName: 'Duy',
     participants: [
       {
         id: '4',
@@ -139,7 +139,7 @@ const mockEvents: Event[] = [
     currentParticipants: 45,
     status: 'upcoming',
     createdBy: '2',
-    creatorName: 'Trần Thị B',
+    creatorName: 'Duy',
     participants: [],
     createdAt: new Date('2024-03-22')
   }

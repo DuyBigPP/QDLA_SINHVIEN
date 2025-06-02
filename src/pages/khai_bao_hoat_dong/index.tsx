@@ -36,7 +36,7 @@ const mockActivities: Activity[] = [
   {
     id: '1',
     studentId: '1',
-    studentName: 'Nguyễn Văn A',
+    studentName: 'Đạt',
     title: 'Tham gia cuộc thi lập trình',
     description: 'Tham gia cuộc thi lập trình cấp khoa, đạt giải 3',
     category: 'hoc_tap',
@@ -49,7 +49,7 @@ const mockActivities: Activity[] = [
   {
     id: '2',
     studentId: '1',
-    studentName: 'Nguyễn Văn A',
+    studentName: 'Đạt',
     title: 'Hoạt động thiện nguyện',
     description: 'Tham gia hoạt động dọn dẹp môi trường tại trường',
     category: 'tinh_nguyen',
@@ -62,7 +62,7 @@ const mockActivities: Activity[] = [
   {
     id: '3',
     studentId: '2',
-    studentName: 'Trần Thị B',
+    studentName: 'Duy',
     title: 'Tổ chức sự kiện lớp',
     description: 'Tổ chức sinh nhật tập thể cho lớp',
     category: 'van_hoa',

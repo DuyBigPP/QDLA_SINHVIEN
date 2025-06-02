@@ -1,5 +1,6 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useAuth } from '@/context/AuthContext';
+import { criteriaService, type Criteria, type SubCriteria } from '@/service/criteriaService';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -58,6 +59,34 @@ interface DRLRecord {
   evidence?: string[];
 }
 
+interface DRLCriteriaScore {
+  criteriaId: number;
+  criteriaName: string;
+  subCriteriaScores: {
+    [subCriteriaId: string]: {
+      id: number;
+      name: string;
+      selfScore: number | null;
+      classLeaderScore: number | null;
+      teacherScore: number | null;
+      minScore: number;
+      maxScore: number;
+    };
+  };
+  maxScore: number;
+  currentScore: number;
+}
+
+interface DRLSummary {
+  studentId: string;
+  studentName: string;
+  semester: number;
+  totalScore: number;
+  rank: string;
+  criteriaScores: DRLCriteriaScore[];
+  status: 'draft' | 'submitted' | 'approved' | 'rejected';
+}
+
 interface SemesterSummary {
   semester: string;
   academicYear: string;
@@ -77,7 +106,7 @@ const mockDRLRecords: DRLRecord[] = [
   {
     id: '1',
     studentId: 'SV001',
-    studentName: 'Nguyễn Văn An',
+    studentName: 'Đạtn',
     semester: 'HK1',
     academicYear: '2024-2025',
     category1: 25,
@@ -90,14 +119,14 @@ const mockDRLRecords: DRLRecord[] = [
     status: 'approved',
     submittedAt: '2024-12-15',
     approvedAt: '2024-12-20',
-    approvedBy: 'Trần Thị Bình',
+    approvedBy: 'Duyình',
     note: 'Sinh viên tích cực tham gia hoạt động',
     evidence: ['Giấy chứng nhận hiến máu', 'Bằng khen tham gia cuộc thi']
   },
   {
     id: '2',
     studentId: 'SV002',
-    studentName: 'Trần Thị Bình',
+    studentName: 'Duyình',
     semester: 'HK1',
     academicYear: '2024-2025',
     category1: 25,
@@ -146,7 +175,7 @@ const mockDRLRecords: DRLRecord[] = [
     status: 'approved',
     submittedAt: '2024-12-12',
     approvedAt: '2024-12-17',
-    approvedBy: 'Trần Thị Bình'
+    approvedBy: 'Duyình'
   },
   {
     id: '5',
@@ -227,8 +256,18 @@ const calculateRank = (score: number): DRLRecord['rank'] => {
 
 const QuanLyDRL = () => {
   const { user } = useAuth();
-  const [drlRecords, setDrlRecords] = useState<DRLRecord[]>(mockDRLRecords);
+  
+  // State management - prioritize real API data over mock data
+  const [drlRecords, setDrlRecords] = useState<DRLRecord[]>([]);
   const [semesters] = useState<SemesterSummary[]>(mockSemesters);
+  
+  // Criteria-based system state
+  const [criteria, setCriteria] = useState<Record<string, Criteria>>({});
+  const [loading, setLoading] = useState(false);
+  const [dataLoading, setDataLoading] = useState(true);
+  const [currentSemester, setCurrentSemester] = useState(1); // Current semester number
+  
+  // UI state
   const [selectedSemester, setSelectedSemester] = useState('HK1 2024-2025');
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState<string>('all');
@@ -239,7 +278,7 @@ const QuanLyDRL = () => {
   const [selectedRecord, setSelectedRecord] = useState<DRLRecord | null>(null);
   const [newRecord, setNewRecord] = useState<Partial<DRLRecord>>({
     studentId: user?.role === 'student' ? 'SV001' : '',
-    studentName: user?.role === 'student' ? 'Nguyễn Văn An' : '',
+    studentName: user?.role === 'student' ? 'Đạtn' : '',
     semester: 'HK1',
     academicYear: '2024-2025',
     category1: 0,
@@ -251,7 +290,77 @@ const QuanLyDRL = () => {
     status: 'draft',
     note: '',
     evidence: []
-  });
+  });  // Load both criteria and DRL records when component mounts
+  useEffect(() => {
+    const loadInitialData = async () => {
+      setDataLoading(true);
+      await Promise.all([
+        loadCriteria(),
+        loadDRLRecords()
+      ]);
+      setDataLoading(false);
+    };
+
+    loadInitialData();
+  }, []);
+
+  const loadCriteria = async () => {
+    setLoading(true);
+    try {
+      const result = await criteriaService.getCriteria(currentSemester);
+      if (result && result.success) {
+        setCriteria(result.payload.criteria);
+        toast.success('Đã tải tiêu chí thành công');
+      } else {
+        toast.error('Không thể tải tiêu chí');
+      }
+    } catch (error) {
+      console.error('Error loading criteria:', error);
+      toast.error('Có lỗi xảy ra khi tải tiêu chí');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const loadDRLRecords = async () => {
+    try {
+      // Try to load real DRL records from API
+      // For now, fall back to mock data
+      // TODO: Implement real API call when DRL records endpoint is available
+      setDrlRecords(mockDRLRecords);
+    } catch (error) {
+      console.error('Error loading DRL records:', error);
+      // Fallback to mock data
+      setDrlRecords(mockDRLRecords);
+    }
+  };
+
+  const updateSubCriteriaScore = async (_criteriaId: number, subCriteriaId: number, score: number) => {
+    if (!user?.id) {
+      toast.error('Không tìm thấy thông tin người dùng');
+      return;
+    }
+
+    try {
+      const success = await criteriaService.updateCriteria({
+        id: subCriteriaId,
+        score: score,
+        semester: currentSemester,
+        user_id: parseInt(user.id)
+      });
+
+      if (success) {
+        toast.success('Cập nhật điểm thành công');
+        // Reload criteria to get updated scores
+        await loadCriteria();
+      } else {
+        toast.error('Không thể cập nhật điểm');
+      }
+    } catch (error) {
+      console.error('Error updating score:', error);
+      toast.error('Có lỗi xảy ra khi cập nhật điểm');
+    }
+  };
 
   // Filter records based on current user and filters
   const filteredRecords = drlRecords.filter(record => {
@@ -346,7 +455,7 @@ const QuanLyDRL = () => {
   const resetForm = () => {
     setNewRecord({
       studentId: user?.role === 'student' ? 'SV001' : '',
-      studentName: user?.role === 'student' ? 'Nguyễn Văn An' : '',
+      studentName: user?.role === 'student' ? 'Đạtn' : '',
       semester: 'HK1',
       academicYear: '2024-2025',
       category1: 0,
@@ -374,34 +483,43 @@ const QuanLyDRL = () => {
   // Calculate current semester stats
   const currentSemesterData = semesters.find(s => 
     s.semester + ' ' + s.academicYear === selectedSemester
-  );
-
+  );  
+  
   return (
     <div className="space-y-6">
-      <div className="flex justify-between items-center">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight">Quản lý điểm rèn luyện</h1>
-          <p className="text-muted-foreground">
-            {user?.role === 'class_leader' 
-              ? 'Quản lý và duyệt điểm rèn luyện của sinh viên trong lớp'
-              : 'Xem và quản lý điểm rèn luyện cá nhân'
-            }
-          </p>
+      {dataLoading ? (
+        <div className="flex items-center justify-center py-12">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto"></div>
+            <p className="mt-4 text-lg font-medium">Đang tải dữ liệu điểm rèn luyện...</p>
+            <p className="mt-2 text-sm text-muted-foreground">Vui lòng chờ trong giây lát</p>          </div>
         </div>
-        <div className="flex gap-2">
-          {user?.role === 'class_leader' && (
-            <>
-              <Button variant="outline">
-                <Upload className="h-4 w-4 mr-2" />
-                Import
-              </Button>
-              <Button variant="outline">
-                <Download className="h-4 w-4 mr-2" />
-                Export
-              </Button>
-            </>
-          )}
-          <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
+      ) : (
+        <>
+          <div className="flex justify-between items-center">
+            <div>
+              <h1 className="text-3xl font-bold tracking-tight">Quản lý điểm rèn luyện</h1>
+              <p className="text-muted-foreground">
+                {user?.role === 'class_leader' 
+                  ? 'Quản lý và duyệt điểm rèn luyện của sinh viên trong lớp'
+                  : 'Xem và quản lý điểm rèn luyện cá nhân'
+                }
+              </p>
+            </div>
+            <div className="flex gap-2">
+              {user?.role === 'class_leader' && (
+                <>
+                  <Button variant="outline">
+                    <Upload className="h-4 w-4 mr-2" />
+                    Import
+                  </Button>
+                  <Button variant="outline">
+                    <Download className="h-4 w-4 mr-2" />
+                    Export
+                  </Button>
+                </>
+              )}
+              <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
             <DialogTrigger asChild>
               <Button>
                 <Plus className="h-4 w-4 mr-2" />
@@ -435,7 +553,7 @@ const QuanLyDRL = () => {
                       id="studentName"
                       value={newRecord.studentName}
                       onChange={(e) => setNewRecord({...newRecord, studentName: e.target.value})}
-                      placeholder="Nguyễn Văn A"
+                      placeholder="Đạt"
                       disabled={user?.role === 'student'}
                     />
                   </div>
@@ -646,6 +764,7 @@ const QuanLyDRL = () => {
       <Tabs defaultValue="records" className="space-y-4">
         <TabsList>
           <TabsTrigger value="records">Bảng điểm</TabsTrigger>
+          <TabsTrigger value="criteria">Tiêu chí đánh giá</TabsTrigger>
           {user?.role === 'class_leader' && <TabsTrigger value="summary">Thống kê</TabsTrigger>}
           <TabsTrigger value="history">Lịch sử</TabsTrigger>
         </TabsList>
@@ -847,6 +966,165 @@ const QuanLyDRL = () => {
                   <p className="mt-1 text-sm text-muted-foreground">
                     Chưa có bản ghi điểm rèn luyện nào cho học kỳ này.
                   </p>
+                </div>
+              )}
+            </CardContent>
+          </Card>        </TabsContent>
+
+        {/* Criteria Tab - Real API Integration */}
+        <TabsContent value="criteria" className="space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Target className="h-5 w-5" />
+                Tiêu chí đánh giá điểm rèn luyện
+              </CardTitle>
+              <CardDescription>
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              {loading ? (
+                <div className="flex items-center justify-center py-8">
+                  <div className="text-center">
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
+                    <p className="mt-2 text-sm text-muted-foreground">Đang tải tiêu chí...</p>
+                  </div>
+                </div>
+              ) : Object.keys(criteria).length === 0 ? (
+                <div className="text-center py-8">
+                  <FileText className="mx-auto h-12 w-12 text-muted-foreground" />
+                  <h3 className="mt-2 text-sm font-medium text-muted-foreground">Chưa có tiêu chí</h3>
+                  <p className="mt-1 text-sm text-muted-foreground">
+                    Hệ thống chưa có tiêu chí đánh giá cho học kỳ này.
+                  </p>
+                  <Button className="mt-4" onClick={loadCriteria}>
+                    <FileText className="h-4 w-4 mr-2" />
+                    Tải lại tiêu chí
+                  </Button>
+                </div>
+              ) : (
+                <div className="space-y-6">
+                  {Object.entries(criteria).map(([criteriaId, criteriaData]) => (
+                    <Card key={criteriaId} className="border">
+                      <CardHeader className="pb-3">                        <CardTitle className="text-lg flex items-center justify-between">
+                          <span className="flex items-center gap-2">
+                            <Award className="h-5 w-5 text-primary" />
+                            {criteriaData.name}
+                          </span>
+                          <Badge variant="outline">
+                            Tối đa: {criteriaData.max_score} điểm
+                          </Badge>
+                        </CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="space-y-4">
+                          {Object.entries(criteriaData.subcriteria).map(([subCriteriaId, subCriteria]) => (
+                            <div key={subCriteriaId} className="border rounded-lg p-4 bg-gray-50">
+                              <div className="flex items-start justify-between gap-4">                                <div className="flex-1">
+                                  <h4 className="font-medium text-sm mb-2">{subCriteria.name}</h4>
+                                  <p className="text-xs text-muted-foreground mb-3">
+                                    Điểm: {subCriteria.min_score} - {subCriteria.max_score}
+                                  </p>
+                                  
+                                  <div className="grid grid-cols-3 gap-3">
+                                    {/* Self Score */}
+                                    <div className="space-y-2">
+                                      <Label className="text-xs text-muted-foreground">Tự đánh giá</Label>
+                                      <div className="flex items-center gap-2">                                        <Input
+                                          type="number"
+                                          min={subCriteria.min_score}
+                                          max={subCriteria.max_score}
+                                          value={subCriteria.self_score || ''}
+                                          onChange={(e) => {
+                                            const score = parseFloat(e.target.value) || 0;
+                                            updateSubCriteriaScore(parseInt(criteriaId), parseInt(subCriteriaId), score);
+                                          }}
+                                          placeholder="0"
+                                          className="h-8 text-xs"
+                                          disabled={user?.role !== 'student'}
+                                        />
+                                        {subCriteria.self_score !== null && (
+                                          <Badge variant="outline" className="text-xs">
+                                            {subCriteria.self_score}
+                                          </Badge>
+                                        )}
+                                      </div>
+                                    </div>
+
+                                    {/* Class Leader Score */}
+                                    <div className="space-y-2">
+                                      <Label className="text-xs text-muted-foreground">Lớp trưởng</Label>
+                                      <div className="flex items-center gap-2">                                        <Input
+                                          type="number"
+                                          min={subCriteria.min_score}
+                                          max={subCriteria.max_score}
+                                          value={subCriteria.class_leader_score || ''}
+                                          onChange={(e) => {
+                                            const score = parseFloat(e.target.value) || 0;
+                                            updateSubCriteriaScore(parseInt(criteriaId), parseInt(subCriteriaId), score);
+                                          }}
+                                          placeholder="0"
+                                          className="h-8 text-xs"
+                                          disabled={user?.role !== 'class_leader'}
+                                        />
+                                        {subCriteria.class_leader_score !== null && (
+                                          <Badge variant="outline" className="text-xs">
+                                            {subCriteria.class_leader_score}
+                                          </Badge>
+                                        )}
+                                      </div>
+                                    </div>
+
+                                    {/* Teacher Score */}
+                                    <div className="space-y-2">
+                                      <Label className="text-xs text-muted-foreground">Giảng viên</Label>
+                                      <div className="flex items-center gap-2">                                        <Input
+                                          type="number"
+                                          min={subCriteria.min_score}
+                                          max={subCriteria.max_score}
+                                          value={subCriteria.teacher_score || ''}
+                                          placeholder="0"
+                                          className="h-8 text-xs"
+                                          disabled={true}
+                                        />
+                                        {subCriteria.teacher_score !== null && (
+                                          <Badge variant="outline" className="text-xs">
+                                            {subCriteria.teacher_score}
+                                          </Badge>
+                                        )}
+                                      </div>
+                                    </div>
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
+                  
+                  <Card className="bg-blue-50 border-blue-200">
+                    <CardContent className="pt-6">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <h3 className="text-lg font-semibold text-blue-900">Tổng điểm hiện tại</h3>
+                          <p className="text-sm text-blue-700">Dựa trên các điểm đã nhập</p>
+                        </div>
+                        <div className="text-right">                          <div className="text-3xl font-bold text-blue-900">
+                            {Object.values(criteria).reduce((total, criteriaData) => {
+                              return total + Object.values(criteriaData.subcriteria).reduce((subTotal, subCriteria) => {
+                                return subTotal + (subCriteria.self_score || subCriteria.class_leader_score || subCriteria.teacher_score || 0);
+                              }, 0);
+                            }, 0)}
+                          </div>
+                          <div className="text-sm text-blue-700">
+                            / {Object.values(criteria).reduce((total, criteriaData) => total + criteriaData.max_score, 0)} điểm
+                          </div>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
                 </div>
               )}
             </CardContent>
@@ -1231,6 +1509,8 @@ const QuanLyDRL = () => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+        </>
+      )}
     </div>
   );
 };

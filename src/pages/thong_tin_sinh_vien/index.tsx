@@ -70,7 +70,7 @@ interface ActivityRecord {
 const mockStudentInfo: StudentInfo = {
   id: '1',
   studentId: 'SV001',
-  fullName: 'Nguyễn Văn An',
+  fullName: 'Đạtn',
   email: 'student@example.com',
   phone: '0123456789',
   dateOfBirth: '2002-03-15',
