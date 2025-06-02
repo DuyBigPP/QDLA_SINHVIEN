@@ -88,18 +88,28 @@ export class ApiService {
         body: formData,
       });
 
-      const data = await response.json();
-
-      if (response.ok) {
+      const data = await response.json();      if (response.ok) {
         return {
           success: true,
           data: data.payload || data,
           message: data.message,
         };
       } else {
+        console.error('File upload failed with status:', response.status);
+        console.error('Response data:', data);
+        
+        let errorMessage = data.message || 'File upload failed';
+        
+        // Handle validation errors (422)
+        if (response.status === 422 && data.errors) {
+          errorMessage = 'Validation failed: ' + Object.entries(data.errors)
+            .map(([field, msgs]) => `${field}: ${Array.isArray(msgs) ? msgs.join(', ') : msgs}`)
+            .join('; ');
+        }
+        
         return {
           success: false,
-          message: data.message || 'File upload failed',
+          message: errorMessage,
           error: data,
         };
       }
