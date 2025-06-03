@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -11,7 +11,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, Dialog
 import { toast } from 'sonner';
 import { Plus, Eye, Check, X, Upload, Download, Paperclip, FileText } from 'lucide-react';
 import { format } from 'date-fns';
-import { EvidenceService, type Evidence } from '@/service/evidenceService';
+import { EvidenceService } from '@/service/evidenceService';
+import { subcriteriaService, type SubCriteriaItem } from '@/service/subcriteriaService';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Progress } from '@/components/ui/progress';
 
@@ -21,7 +22,6 @@ interface Activity {
   studentId: string;
   studentName: string;
   description: string;
-  category?: 'hoc_tap' | 'the_thao' | 'van_hoa' | 'tinh_nguyen' | 'khac';
   status: 'pending' | 'approved' | 'rejected';
   file_url?: string;
   subcriteria_id: number;
@@ -29,14 +29,6 @@ interface Activity {
   created_at: string;
   updated_at?: string;
 }
-
-const categories = {
-  hoc_tap: 'Học tập',
-  the_thao: 'Thể thao',
-  van_hoa: 'Văn hóa',
-  tinh_nguyen: 'Tình nguyện',
-  khac: 'Khác'
-};
 
 const statusColors = {
   pending: 'bg-yellow-100 text-yellow-800',
@@ -48,34 +40,6 @@ const statusLabels = {
   pending: 'Chờ duyệt',
   approved: 'Đã duyệt',
   rejected: 'Từ chối'
-};
-
-// Map subcriteria ID to activity category
-const mapSubcriteriaToCategory = (subcriteriaId: number): string => {
-  // Academic subcriteria IDs (1-5)
-  if (subcriteriaId >= 1 && subcriteriaId <= 5) return 'hoc_tap';
-  
-  // Sports subcriteria IDs (10-14)
-  if (subcriteriaId >= 10 && subcriteriaId <= 14) return 'the_thao';
-  
-  // Cultural subcriteria IDs (15-20)
-  if (subcriteriaId >= 15 && subcriteriaId <= 20) return 'van_hoa';
-  
-  // Volunteer subcriteria IDs (6-9)
-  if (subcriteriaId >= 6 && subcriteriaId <= 9) return 'tinh_nguyen';
-  
-  return 'khac';
-};
-
-// Map category to subcriteria ID
-const mapCategoryToSubcriteria = (category: string): number => {
-  switch (category) {
-    case 'hoc_tap': return 2; // Example: Using subcriteria 2 (academic performance)
-    case 'the_thao': return 10; // Example: Using subcriteria 10 (sports activities)
-    case 'van_hoa': return 16; // Example: Using subcriteria 16 (cultural activities)
-    case 'tinh_nguyen': return 8; // Example: Using subcriteria 8 (community participation)
-    default: return 1; // Default subcriteria
-  }
 };
 
 const KhaiBaoHoatDong = () => {
@@ -91,26 +55,35 @@ const KhaiBaoHoatDong = () => {
   const [uploadProgress, setUploadProgress] = useState(0);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [currentSemester, setCurrentSemester] = useState(20242);
-  
-  // Form state
+    // Subcriteria state
+  const [subcriteriaList, setSubcriteriaList] = useState<SubCriteriaItem[]>([]);
+    // Form state - using subcriteria_id directly instead of category
   const [newActivity, setNewActivity] = useState({
     description: '',
-    category: '',
     subcriteria_id: 0,
     evidenceFile: undefined as File | undefined
   });
 
-  useEffect(() => {
-    fetchEvidences();
+  // Load criteria and subcriteria data
+  const loadSubcriteriaData = useCallback(async () => {
+    try {
+      const data = await subcriteriaService.getAllSubcriteria(currentSemester);
+      if (data) {
+        setSubcriteriaList(data.subcriteria);
+      }
+    } catch (error) {
+      console.error('Error loading subcriteria data:', error);
+      toast.error('Không thể tải dữ liệu tiêu chí');
+    }
   }, [currentSemester]);
 
   // Fetch evidences from API
-  const fetchEvidences = async () => {
+  const fetchEvidences = useCallback(async () => {
     setIsLoading(true);
     try {
       const response = await EvidenceService.getEvidence({
-        semester: currentSemester,
-        student_id: user?.role === 'student' ? user.id : undefined
+        semester: currentSemester
+        // Note: API doesn't support student_id filter, so we filter client-side
       });
       
       if (response.success && response.data) {
@@ -122,7 +95,7 @@ const KhaiBaoHoatDong = () => {
           studentName: 'Sinh viên', // This should be retrieved from another API if needed
           description: evidence.description,
           status: evidence.status || 'pending',
-          file_url: evidence.file_url,
+          file_url: evidence.file_path, // Use file_path from API
           subcriteria_id: evidence.subcriteria_id,
           semester: evidence.semester,
           created_at: evidence.created_at || new Date().toISOString(),
@@ -140,13 +113,23 @@ const KhaiBaoHoatDong = () => {
       console.error('Error fetching evidences:', error);
       toast.error('Đã xảy ra lỗi khi lấy dữ liệu minh chứng');
       // Fallback to empty array if API fails
-      setActivities([]);
-    } finally {
+      setActivities([]);    } finally {
       setIsLoading(false);
     }
-  };
+  }, [currentSemester]);
 
-  // Filter activities based on user role, status, and category
+  // Load subcriteria data on component mount
+  useEffect(() => {
+    loadSubcriteriaData();
+  }, [loadSubcriteriaData]);
+
+  useEffect(() => {
+    if (subcriteriaList.length > 0) {
+      fetchEvidences();
+    }
+  }, [fetchEvidences, subcriteriaList.length]);
+
+  // Filter activities based on user role, status, and subcriteria
   const filteredActivities = activities.filter(activity => {
     // Role-based filtering
     if (user?.role === 'student' && activity.studentId !== user.id) {
@@ -158,8 +141,8 @@ const KhaiBaoHoatDong = () => {
       return false;
     }
     
-    // Category filtering
-    if (filterCategory !== 'all' && mapSubcriteriaToCategory(activity.subcriteria_id) !== filterCategory) {
+    // Subcriteria filtering
+    if (filterCategory !== 'all' && activity.subcriteria_id.toString() !== filterCategory) {
       return false;
     }
     
@@ -185,11 +168,10 @@ const KhaiBaoHoatDong = () => {
       });
     }
   };
-
   const handleSubmitActivity = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!newActivity.description || !newActivity.category || !newActivity.evidenceFile) {
+    if (!newActivity.description || !newActivity.subcriteria_id || !newActivity.evidenceFile) {
       toast.error('Vui lòng điền đầy đủ thông tin và tải lên minh chứng');
       return;
     }
@@ -198,14 +180,11 @@ const KhaiBaoHoatDong = () => {
     setUploadProgress(10);
     
     try {
-      // Map category to subcriteria_id
-      const subcriteria_id = mapCategoryToSubcriteria(newActivity.category);
-      
       setUploadProgress(30);
       
-      // Submit evidence to API
+      // Submit evidence to API using subcriteria_id directly
       const evidenceData = {
-        subcriteria_id: subcriteria_id,
+        subcriteria_id: newActivity.subcriteria_id,
         semester: currentSemester,
         description: newActivity.description
       };
@@ -222,7 +201,6 @@ const KhaiBaoHoatDong = () => {
         // Reset form
         setNewActivity({
           description: '',
-          category: '',
           subcriteria_id: 0,
           evidenceFile: undefined
         });
@@ -340,25 +318,31 @@ const KhaiBaoHoatDong = () => {
                         rows={4}
                         disabled={isSubmitting}
                       />
-                    </div>
-                    <div className="space-y-2">
-                      <Label>Loại minh chứng</Label>
+                    </div>                    <div className="space-y-2">
+                      <Label>Tiêu chí minh chứng</Label>
                       <Select 
-                        value={newActivity.category} 
-                        onValueChange={(value) => setNewActivity({...newActivity, category: value})}
+                        value={newActivity.subcriteria_id.toString()} 
+                        onValueChange={(value) => setNewActivity({...newActivity, subcriteria_id: parseInt(value)})}
                         disabled={isSubmitting}
                       >
                         <SelectTrigger>
-                          <SelectValue placeholder="Chọn loại minh chứng" />
+                          <SelectValue placeholder="Chọn tiêu chí minh chứng" />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="hoc_tap">Học tập (Tiêu chí 1-5)</SelectItem>
-                          <SelectItem value="tinh_nguyen">Tình nguyện (Tiêu chí 6-9)</SelectItem>
-                          <SelectItem value="the_thao">Thể thao (Tiêu chí 10-14)</SelectItem>
-                          <SelectItem value="van_hoa">Văn hóa (Tiêu chí 15-20)</SelectItem>
-                          <SelectItem value="khac">Khác</SelectItem>
+                          {subcriteriaList
+                            .filter(sub => sub.required_evidence) // Only show subcriteria that require evidence
+                            .map((subcriteria) => (
+                            <SelectItem key={subcriteria.id} value={subcriteria.id.toString()}>
+                              {subcriteria.name} (ID: {subcriteria.id})
+                            </SelectItem>
+                          ))}
                         </SelectContent>
                       </Select>
+                      {subcriteriaList.length === 0 && (
+                        <p className="text-sm text-muted-foreground">
+                          Đang tải danh sách tiêu chí...
+                        </p>
+                      )}
                     </div>
                   </div>
                   
@@ -469,20 +453,19 @@ const KhaiBaoHoatDong = () => {
             </SelectContent>
           </Select>
         </div>
-        
-        <div className="w-1/3">
-          <Label>Loại minh chứng</Label>
+          <div className="w-1/3">
+          <Label>Tiêu chí</Label>
           <Select value={filterCategory} onValueChange={setFilterCategory}>
             <SelectTrigger>
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">Tất cả</SelectItem>
-              <SelectItem value="hoc_tap">Học tập</SelectItem>
-              <SelectItem value="the_thao">Thể thao</SelectItem>
-              <SelectItem value="van_hoa">Văn hóa</SelectItem>
-              <SelectItem value="tinh_nguyen">Tình nguyện</SelectItem>
-              <SelectItem value="khac">Khác</SelectItem>
+              <SelectItem value="all">Tất cả tiêu chí</SelectItem>
+              {subcriteriaList.map((subcriteria) => (
+                <SelectItem key={subcriteria.id} value={subcriteria.id.toString()}>
+                  {subcriteria.name}
+                </SelectItem>
+              ))}
             </SelectContent>
           </Select>
         </div>
@@ -527,7 +510,7 @@ const KhaiBaoHoatDong = () => {
               <TableRow>
                 <TableHead>Mô tả minh chứng</TableHead>
                 {user?.role === 'class_leader' && <TableHead>Sinh viên</TableHead>}
-                <TableHead>Loại</TableHead>
+                <TableHead>Tiêu chí</TableHead>
                 <TableHead>Ngày tạo</TableHead>
                 <TableHead>Trạng thái</TableHead>
                 <TableHead className="text-right">Thao tác</TableHead>
@@ -537,10 +520,9 @@ const KhaiBaoHoatDong = () => {
               {filteredActivities.map((activity) => (
                 <TableRow key={activity.id}>
                   <TableCell className="font-medium">{activity.description}</TableCell>
-                  {user?.role === 'class_leader' && <TableCell>{activity.studentName}</TableCell>}
-                  <TableCell>
+                  {user?.role === 'class_leader' && <TableCell>{activity.studentName}</TableCell>}                  <TableCell>
                     <Badge variant="outline">
-                      {categories[mapSubcriteriaToCategory(activity.subcriteria_id) as keyof typeof categories]}
+                      {subcriteriaList.find(sub => sub.id === activity.subcriteria_id)?.name || `Tiêu chí ${activity.subcriteria_id}`}
                     </Badge>
                   </TableCell>
                   <TableCell>
@@ -612,12 +594,11 @@ const KhaiBaoHoatDong = () => {
                   <p className="text-sm">{selectedActivity.studentName}</p>
                 </div>
               )}
-              
-              <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <Label className="text-sm font-medium">Loại minh chứng</Label>
+                  <Label className="text-sm font-medium">Tiêu chí minh chứng</Label>
                   <Badge variant="outline" className="mt-1">
-                    {categories[mapSubcriteriaToCategory(selectedActivity.subcriteria_id) as keyof typeof categories]}
+                    {subcriteriaList.find(sub => sub.id === selectedActivity.subcriteria_id)?.name || `Tiêu chí ${selectedActivity.subcriteria_id}`}
                   </Badge>
                 </div>
                 <div>

@@ -1,5 +1,4 @@
-import React, { useState } from 'react';
-import { useAuth } from '@/context/AuthContext';
+import { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -8,11 +7,11 @@ import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Separator } from '@/components/ui/separator';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Progress } from '@/components/ui/progress';
 import { toast } from 'sonner';
+import { RecommendationService } from '@/service/recommendationService';
 import { 
-  User, 
   Mail, 
   Phone, 
   MapPin, 
@@ -26,10 +25,9 @@ import {
   Trophy,
   Clock,
   Target,
-  BookOpen,
   Users,
-  Star,
-  TrendingUp
+  Lightbulb,
+  RefreshCw
 } from 'lucide-react';
 
 // Mock data for student information
@@ -175,11 +173,15 @@ const statusLabels = {
 };
 
 const ThongTinSinhVien = () => {
-  const { user } = useAuth();
   const [studentInfo, setStudentInfo] = useState<StudentInfo>(mockStudentInfo);
-  const [activities, setActivities] = useState<ActivityRecord[]>(mockActivities);
+  const [activities] = useState<ActivityRecord[]>(mockActivities);
   const [isEditMode, setIsEditMode] = useState(false);
   const [editData, setEditData] = useState<Partial<StudentInfo>>({});
+  
+  // Recommendation dialog states
+  const [isRecommendationDialogOpen, setIsRecommendationDialogOpen] = useState(false);
+  const [recommendationMessage, setRecommendationMessage] = useState('');
+  const [isLoadingRecommendations, setIsLoadingRecommendations] = useState(false);
 
   const handleEditToggle = () => {
     if (isEditMode) {
@@ -196,10 +198,33 @@ const ThongTinSinhVien = () => {
     }
     setIsEditMode(!isEditMode);
   };
-
   const handleCancelEdit = () => {
     setEditData({});
     setIsEditMode(false);
+  };
+  // Handle recommendations
+  const handleGetRecommendations = async () => {
+    setIsLoadingRecommendations(true);
+    try {
+      const response = await RecommendationService.getRecommendations();
+      
+      if (response.success && response.data) {
+        // Kiểm tra cấu trúc response an toàn hơn
+        const message = response.data.payload?.recommendations?.message || 
+                       response.data.message || 
+                       'Không có gợi ý nào được tìm thấy';
+        
+        setRecommendationMessage(message);
+        setIsRecommendationDialogOpen(true);
+      } else {
+        toast.error(response.message || 'Không thể lấy gợi ý cải thiện DRL');
+      }
+    } catch (error) {
+      console.error('Error fetching recommendations:', error);
+      toast.error('Lỗi khi lấy gợi ý cải thiện DRL');
+    } finally {
+      setIsLoadingRecommendations(false);
+    }
   };
 
   // Calculate statistics
@@ -217,7 +242,24 @@ const ThongTinSinhVien = () => {
             Quản lý thông tin cá nhân và theo dõi hoạt động
           </p>
         </div>
+        <div className="flex gap-2">
+          <Button
+            onClick={handleGetRecommendations}
+            disabled={isLoadingRecommendations}
+            className="flex items-center gap-2"
+            variant="outline"
+          >
+            {isLoadingRecommendations ? (
+              <RefreshCw className="h-4 w-4 animate-spin" />
+            ) : (
+              <Lightbulb className="h-4 w-4" />
+            )}
+            Gợi ý cải thiện DRL
+          </Button>
+        </div>
       </div>
+            
+
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Profile Card */}
@@ -295,28 +337,44 @@ const ThongTinSinhVien = () => {
               <div className="flex items-center space-x-3">
                 <GraduationCap className="h-4 w-4 text-muted-foreground" />
                 <span className="text-sm">{studentInfo.major}</span>
-              </div>
+              </div>              <Separator />
 
-              <Separator />
-
-              <div className="flex justify-between">
-                {isEditMode ? (
-                  <div className="flex gap-2 w-full">
-                    <Button size="sm" onClick={handleEditToggle} className="flex-1">
-                      <Save className="h-4 w-4 mr-2" />
-                      Lưu
+              <div className="space-y-3">
+                <div className="flex justify-between">
+                  {isEditMode ? (
+                    <div className="flex gap-2 w-full">
+                      <Button size="sm" onClick={handleEditToggle} className="flex-1">
+                        <Save className="h-4 w-4 mr-2" />
+                        Lưu
+                      </Button>
+                      <Button size="sm" variant="outline" onClick={handleCancelEdit} className="flex-1">
+                        <X className="h-4 w-4 mr-2" />
+                        Hủy
+                      </Button>
+                    </div>
+                  ) : (
+                    <Button size="sm" onClick={handleEditToggle} className="w-full">
+                      <Edit className="h-4 w-4 mr-2" />
+                      Chỉnh sửa
                     </Button>
-                    <Button size="sm" variant="outline" onClick={handleCancelEdit} className="flex-1">
-                      <X className="h-4 w-4 mr-2" />
-                      Hủy
-                    </Button>
-                  </div>
-                ) : (
-                  <Button size="sm" onClick={handleEditToggle} className="w-full">
-                    <Edit className="h-4 w-4 mr-2" />
-                    Chỉnh sửa
-                  </Button>
-                )}
+                  )}
+                </div>
+                
+                {/* Recommendation Button */}
+                <Button
+                  onClick={handleGetRecommendations}
+                  disabled={isLoadingRecommendations}
+                  size="sm"
+                  variant="secondary"
+                  className="w-full"
+                >
+                  {isLoadingRecommendations ? (
+                    <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                  ) : (
+                    <Lightbulb className="h-4 w-4 mr-2" />
+                  )}
+                  Gợi ý cải thiện DRL
+                </Button>
               </div>
             </CardContent>
           </Card>
@@ -607,10 +665,51 @@ const ThongTinSinhVien = () => {
                   </CardContent>
                 </Card>
               </div>
-            </TabsContent>
-          </Tabs>
+            </TabsContent>          </Tabs>
         </div>
       </div>
+
+      {/* Recommendation Dialog */}
+      <Dialog open={isRecommendationDialogOpen} onOpenChange={setIsRecommendationDialogOpen}>
+        <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Lightbulb className="h-5 w-5 text-yellow-500" />
+              Gợi ý cải thiện điểm rèn luyện
+            </DialogTitle>
+            <DialogDescription>
+              Dưới đây là những gợi ý được AI phân tích để giúp bạn cải thiện điểm rèn luyện
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-4">
+            {recommendationMessage ? (
+              <div className="prose prose-sm max-w-none">
+                <div 
+                  className="whitespace-pre-wrap text-sm leading-relaxed"
+                  dangerouslySetInnerHTML={{
+                    __html: recommendationMessage
+                      .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+                      .replace(/\n\n/g, '<br/><br/>')
+                      .replace(/\n- /g, '<br/>• ')
+                  }}
+                />
+              </div>
+            ) : (
+              <div className="text-center py-8 text-muted-foreground">
+                <Lightbulb className="h-12 w-12 mx-auto mb-4 text-muted-foreground/50" />
+                <p>Không có gợi ý nào được tìm thấy</p>
+              </div>
+            )}
+          </div>
+
+          <DialogFooter>
+            <Button onClick={() => setIsRecommendationDialogOpen(false)}>
+              Đóng
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

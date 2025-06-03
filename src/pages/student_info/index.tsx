@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { useAuth } from '@/context/AuthContext'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -5,6 +6,9 @@ import { Button } from '@/components/ui/button'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Progress } from '@/components/ui/progress'
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
+import { toast } from 'sonner'
+import { RecommendationService } from '@/service/recommendationService'
 import { 
   User, 
   Mail, 
@@ -18,7 +22,9 @@ import {
   BookOpen,
   Target,
   Clock,
-  CheckCircle
+  CheckCircle,
+  Lightbulb,
+  RefreshCw
 } from 'lucide-react'
 
 // Mock data cho thông tin sinh viên
@@ -155,6 +161,49 @@ const mockStudentData = {
 const StudentInfo = () => {
   const { user } = useAuth()
   
+  // Recommendation dialog states
+  const [isRecommendationDialogOpen, setIsRecommendationDialogOpen] = useState(false)
+  const [recommendationMessage, setRecommendationMessage] = useState('')
+  const [isLoadingRecommendations, setIsLoadingRecommendations] = useState(false)
+
+  // Handle recommendations
+  const handleGetRecommendations = async () => {
+    setIsLoadingRecommendations(true)
+    try {
+      const response = await RecommendationService.getRecommendations()
+      
+      // Log để debug      console.log('Recommendation response:', response)
+      
+      if (response.success && response.data) {
+        // Kiểm tra cấu trúc response an toàn hơn
+        let message = 'Không có gợi ý nào được tìm thấy'
+        
+        // ApiService đã extract payload thành data, nên truy cập trực tiếp
+        if (response.data.recommendations?.message) {
+          message = response.data.recommendations.message
+        } else if (response.data.payload?.recommendations?.message) {
+          // Fallback case nếu payload vẫn còn
+          message = response.data.payload.recommendations.message
+        } else if (response.data.message) {
+          message = response.data.message
+        } else if (typeof response.data === 'string') {
+          message = response.data
+        }
+        
+        setRecommendationMessage(message)
+        setIsRecommendationDialogOpen(true)
+      } else {
+        console.log('Response failed or no data:', response)
+        toast.error(response.message || 'Không thể lấy gợi ý cải thiện DRL')
+      }
+    } catch (error) {
+      console.error('Error fetching recommendations:', error)
+      toast.error('Lỗi khi lấy gợi ý cải thiện DRL')
+    } finally {
+      setIsLoadingRecommendations(false)
+    }
+  }
+  
   // Lấy data dựa trên role
   const studentData = user?.role === 'class_leader' 
     ? mockStudentData.classLeader 
@@ -179,7 +228,6 @@ const StudentInfo = () => {
       default: return <Activity className="h-4 w-4" />
     }
   }
-
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -190,12 +238,27 @@ const StudentInfo = () => {
             Quản lý thông tin cá nhân và hoạt động học tập
           </p>
         </div>
-        {user?.role === 'class_leader' && (
-          <Badge variant="secondary" className="mt-2 md:mt-0">
-            <Users className="h-4 w-4 mr-1" />
-            Lớp trưởng
-          </Badge>
-        )}
+        <div className="flex items-center gap-3 mt-2 md:mt-0">
+          <Button 
+            onClick={handleGetRecommendations}
+            disabled={isLoadingRecommendations}
+            variant="outline"
+            className="flex items-center gap-2"
+          >
+            {isLoadingRecommendations ? (
+              <RefreshCw className="h-4 w-4 animate-spin" />
+            ) : (
+              <Lightbulb className="h-4 w-4" />
+            )}
+            Gợi ý cải thiện DRL
+          </Button>
+          {user?.role === 'class_leader' && (
+            <Badge variant="secondary">
+              <Users className="h-4 w-4 mr-1" />
+              Lớp trưởng
+            </Badge>
+          )}
+        </div>
       </div>
 
       {/* Main Content */}
@@ -494,10 +557,52 @@ const StudentInfo = () => {
                   </div>
                 </div>
               </CardContent>
-            </Card>
-          </TabsContent>
+            </Card>          </TabsContent>
         )}
       </Tabs>
+
+      {/* Recommendation Dialog */}
+      <Dialog open={isRecommendationDialogOpen} onOpenChange={setIsRecommendationDialogOpen}>
+        <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Lightbulb className="h-5 w-5 text-yellow-500" />
+              Gợi ý cải thiện điểm rèn luyện
+            </DialogTitle>
+            <DialogDescription>
+              Các gợi ý được tạo bởi AI để giúp bạn cải thiện điểm rèn luyện
+            </DialogDescription>
+          </DialogHeader>
+          <div className="mt-4">
+            <div className="prose prose-sm max-w-none">
+              <div className="whitespace-pre-line text-sm text-gray-700 leading-relaxed">
+                {recommendationMessage}
+              </div>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button 
+              variant="outline" 
+              onClick={() => setIsRecommendationDialogOpen(false)}
+            >
+              Đóng
+            </Button>
+            <Button onClick={handleGetRecommendations} disabled={isLoadingRecommendations}>
+              {isLoadingRecommendations ? (
+                <>
+                  <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                  Đang tải...
+                </>
+              ) : (
+                <>
+                  <RefreshCw className="h-4 w-4 mr-2" />
+                  Làm mới gợi ý
+                </>
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

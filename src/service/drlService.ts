@@ -1,6 +1,6 @@
 
 import { ApiService } from './apiService';
-import { GET_CRITERIA, UPDATE_CRITERIA } from './endpoint/endpoint';
+import { GET_CRITERIA, UPDATE_USER_SUBCRITERIA } from './endpoint/endpoint';
 import { 
   DRLCriteriaResponse, 
   DRLUpdateRequest, 

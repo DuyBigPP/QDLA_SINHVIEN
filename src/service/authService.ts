@@ -13,13 +13,14 @@ export interface LoginRequest {
 }
 
 export interface LoginResponse {
+  access_token: string;
+  token_type: string;
+}
+
+export interface LoginResult {
   success: boolean;
   message: string;
-  payload: {
-    access_token: string;
-    refresh_token: string;
-    token_type: string;
-  };
+  data?: LoginResponse;
 }
 
 export interface UserInfoResponse {
@@ -47,12 +48,13 @@ class AuthService {
     // Khôi phục token từ localStorage khi khởi tạo
     this.accessToken = localStorage.getItem('access_token');
   }
-
   // Lưu tokens vào localStorage
-  private saveTokens(accessToken: string, refreshToken: string) {
+  private saveTokens(accessToken: string, refreshToken?: string) {
     this.accessToken = accessToken;
     localStorage.setItem('access_token', accessToken);
-    localStorage.setItem('refresh_token', refreshToken);
+    if (refreshToken) {
+      localStorage.setItem('refresh_token', refreshToken);
+    }
   }
 
   // Xóa tokens
@@ -72,9 +74,8 @@ class AuthService {
   hasValidToken(): boolean {
     return !!this.accessToken;
   }
-
   // Đăng nhập
-  async login(username: string, password: string): Promise<LoginResponse | ApiError> {
+  async login(username: string, password: string): Promise<LoginResult> {
     try {
       console.log('Login request:', { username, password }); // Debug log
       
@@ -99,13 +100,11 @@ class AuthService {
       return {
         success: false,
         message: 'Lỗi kết nối đến server. Vui lòng kiểm tra kết nối mạng.',
-        error,
       };
     }
   }
-
   // Thử đăng nhập với JSON
-  private async tryJsonLogin(username: string, password: string): Promise<LoginResponse | ApiError> {
+  private async tryJsonLogin(username: string, password: string): Promise<LoginResult> {
     try {
       const requestBody = {
         username: username.trim(),
@@ -130,13 +129,11 @@ class AuthService {
       return {
         success: false,
         message: 'JSON login failed',
-        error,
       };
     }
   }
-
   // Thử đăng nhập với Form data
-  private async tryFormLogin(username: string, password: string): Promise<LoginResponse | ApiError> {
+  private async tryFormLogin(username: string, password: string): Promise<LoginResult> {
     try {
       const formData = new FormData();
       formData.append('username', username.trim());
@@ -160,13 +157,11 @@ class AuthService {
       return {
         success: false,
         message: 'Form login failed',
-        error,
       };
     }
   }
-
   // Xử lý response chung cho cả JSON và Form
-  private async handleLoginResponse(response: Response, method: string): Promise<LoginResponse | ApiError> {
+  private async handleLoginResponse(response: Response, method: string): Promise<LoginResult> {
     console.log(`${method} Response status:`, response.status); // Debug log
     console.log(`${method} Response headers:`, Object.fromEntries(response.headers)); // Debug log
 
@@ -182,7 +177,6 @@ class AuthService {
         return {
           success: false,
           message: 'Server trả về response rỗng',
-          error: null,
         };
       }
     } catch (parseError) {
@@ -190,14 +184,17 @@ class AuthService {
       return {
         success: false,
         message: 'Server response không phải JSON hợp lệ',
-        error: parseError,
       };
     }
 
-    if (response.ok && data?.success) {
-      // Lưu tokens
-      this.saveTokens(data.payload.access_token, data.payload.refresh_token);
-      return data as LoginResponse;
+    if (response.ok && data?.access_token) {
+      // Lưu tokens - chỉ có access_token, không có refresh_token nữa
+      this.saveTokens(data.access_token, ''); // Pass empty string for refresh token
+      return {
+        success: true,
+        message: 'Đăng nhập thành công',
+        data: data as LoginResponse
+      };
     } else {
       console.error('Login failed:', {
         status: response.status,
@@ -219,14 +216,12 @@ class AuthService {
         return {
           success: false,
           message: `Lỗi dữ liệu đầu vào: ${errorMessages.join(', ')}`,
-          error: data,
         };
       }
       
       return {
         success: false,
         message: data?.message || data?.detail || `Đăng nhập thất bại (${response.status})`,
-        error: data,
       };
     }
   }
@@ -284,17 +279,10 @@ class AuthService {
       
       if (response.ok) {
         const data: UserInfoResponse = await response.json();
-        
-        if (data.success && data.payload.user) {
+          if (data.success && data.payload.user) {
           const apiUser = data.payload.user;
           
-          // Chỉ cho phép student và class_leader truy cập
-          if (apiUser.role !== 'student' && apiUser.role !== 'class_leader') {
-            console.error('User role not allowed:', apiUser.role);
-            this.clearTokens(); // Xóa token nếu role không được phép
-            return null;
-          }
-          
+          // Cho phép tất cả các role truy cập
           const userInfo: User = {
             id: apiUser.id.toString(),
             name: apiUser.username, // Sử dụng username làm display name
@@ -318,14 +306,15 @@ class AuthService {
       return null;
     }
   }
-
   // Map role từ API về role trong hệ thống
-  private mapUserRole(apiRole: string): 'student' | 'class_leader' {
+  private mapUserRole(apiRole: string): 'student' | 'class_leader' | 'teacher' | 'admin' {
     // Điều chỉnh mapping này theo cấu trúc role từ backend
-    const roleMapping: Record<string, 'student' | 'class_leader'> = {
+    const roleMapping: Record<string, 'student' | 'class_leader' | 'teacher' | 'admin'> = {
       'student': 'student',
       'class_leader': 'class_leader',
       'leader': 'class_leader',
+      'teacher': 'teacher',
+      'admin': 'admin',
     };
     
     return roleMapping[apiRole.toLowerCase()] || 'student';

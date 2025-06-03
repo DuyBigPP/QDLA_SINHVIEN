@@ -1,5 +1,5 @@
 import { ApiService } from './apiService';
-import { GET_CRITERIA, UPDATE_CRITERIA } from './endpoint/endpoint';
+import { UPDATE_CRITERIA } from './endpoint/endpoint';
 
 export interface Criteria {
   id: number;
@@ -37,6 +37,13 @@ export interface UpdateCriteriaRequest {
 class CriteriaService {  // Lấy danh sách criteria theo semester
   async getCriteria(semester: number): Promise<CriteriaResponse | null> {
     try {
+      // The GET_CRITERIA endpoint requires both semester and subcriteria_id as required parameters
+      // Since we want to get ALL criteria (not specific to a subcriteria), we should use mock data
+      // or make multiple API calls. For now, using mock data as fallback.
+      console.warn(`GET_CRITERIA endpoint requires subcriteria_id, using mock data for semester ${semester}`);
+      return this.getMockCriteria();
+      
+      /* Original API call - commented out due to missing required subcriteria_id parameter
       const url = `${GET_CRITERIA}?semester=${semester}`;
       const result = await ApiService.get<{criteria: Record<string, Criteria>}>(url);
       
@@ -51,6 +58,7 @@ class CriteriaService {  // Lấy danh sách criteria theo semester
         // Fallback to mock data if API fails
         return this.getMockCriteria();
       }
+      */
     } catch (error) {
       console.error('Error getting criteria:', error);
       // Fallback to mock data if API fails

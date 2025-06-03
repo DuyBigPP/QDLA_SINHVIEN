@@ -1,7 +1,7 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react'
 import { authService, User } from '@/service/authService'
 
-export type UserRole = 'student' | 'class_leader'
+export type UserRole = 'student' | 'class_leader' | 'teacher' | 'admin' | 'teacher' | 'admin'
 
 interface AuthContextType {
   user: User | null
@@ -26,6 +26,18 @@ const mockUsers: User[] = [
     name: 'Duy',
     username: 'leader',
     role: 'class_leader'
+  },
+  {
+    id: '3',
+    name: 'Admin',
+    username: 'admin',
+    role: 'admin'
+  },
+  {
+    id: '4',
+    name: 'Teacher',
+    username: 'teacher',
+    role: 'teacher'
   }
 ]
 
@@ -58,26 +70,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     initializeAuth()
   }, [])
-
   const login = async (username: string, password: string): Promise<{ success: boolean; message: string }> => {
     setIsLoading(true)
     try {
       // Thử đăng nhập qua API trước
       const result = await authService.login(username, password)
       
-      if (result.success) {
-        // Lấy thông tin user sau khi đăng nhập thành công
+      if (result.success) {        // Lấy thông tin user sau khi đăng nhập thành công
         const userInfo = await authService.getUserInfo()
         if (userInfo) {
-          // Kiểm tra role có được phép truy cập không
-          if (userInfo.role === 'student' || userInfo.role === 'class_leader') {
-            setUser(userInfo)
-            return { success: true, message: 'Đăng nhập thành công' }
-          } else {
-            // Role không được phép, logout và thông báo lỗi
-            authService.logout()
-            return { success: false, message: `Vai trò '${userInfo.role}' không được phép truy cập ứng dụng sinh viên` }
-          }
+          // Cho phép tất cả các role truy cập
+          setUser(userInfo)
+          return { success: true, message: result.message }
         } else {
           return { success: false, message: 'Không thể lấy thông tin người dùng' }
         }
@@ -99,13 +103,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const mockLogin = async (username: string, password: string): Promise<{ success: boolean; message: string }> => {
     // Simulate API delay
     await new Promise(resolve => setTimeout(resolve, 1000))
-    
-    // Mock credentials
+      // Mock credentials
     const mockCredentials = [
       { username: 'student', password: '123456', userId: '1' },
       { username: 'leader', password: '123456', userId: '2' },
+      { username: 'admin', password: '123456', userId: '3' },
+      { username: 'teacher', password: '123456', userId: '4' },
       { username: 'student@example.com', password: '123456', userId: '1' },
-      { username: 'leader@example.com', password: '123456', userId: '2' }
+      { username: 'leader@example.com', password: '123456', userId: '2' },
+      { username: 'admin@example.com', password: '123456', userId: '3' },
+      { username: 'teacher@example.com', password: '123456', userId: '4' }
     ]
     
     const credential = mockCredentials.find(

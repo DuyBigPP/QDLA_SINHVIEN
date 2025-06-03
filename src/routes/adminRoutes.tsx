@@ -13,6 +13,10 @@ import QuanLySuKienThamGia from "@/pages/quan_ly_su_kien_tham_gia/index.tsx"
 import QuanLyThanhVien from "@/pages/quan_ly_thanh_vien/index.tsx"
 import Login from "@/pages/login/index.tsx"
 import QuanLyDRL from "@/pages/quan_ly_DRL/index.tsx"
+import QuanLyNguoiDung from "@/pages/quan_ly_nguoi_dung/index.tsx"
+import AdminDashboard from "@/pages/admin_dashboard/index.tsx"
+import QuanLyMinhChung from "@/pages/quan_ly_minh_chung/index.tsx"
+import QuanLyTaiKhoan from "@/pages/quan_ly_tai_khoan/index.tsx"
 // Protected Route Component
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { isAuthenticated } = useAuth()
@@ -35,14 +39,28 @@ function RoleProtectedRoute({
   const { user } = useAuth()
   
   if (!user || !allowedRoles.includes(user.role)) {
-    return <Navigate to="/student-info" replace />
+    // Redirect based on user role
+    if (user?.role === 'admin' || user?.role === 'teacher') {
+      return <Navigate to="/admin-dashboard" replace />
+    } else {
+      return <Navigate to="/student-info" replace />
+    }
   }
   
   return <>{children}</>
 }
 
 export function AdminRoutes() {
-  const { isAuthenticated } = useAuth()
+  const { isAuthenticated, user } = useAuth()
+
+  // Default redirect based on user role
+  const getDefaultRedirect = () => {
+    if (!user) return "/login"
+    if (user.role === 'admin' || user.role === 'teacher') {
+      return "/admin-dashboard"
+    }
+    return "/student-info"
+  }
 
   return (
     <BrowserRouter>
@@ -50,7 +68,7 @@ export function AdminRoutes() {
         {/* Public Route */}
         <Route 
           path="/login" 
-          element={isAuthenticated ? <Navigate to="/student-info" replace /> : <Login />} 
+          element={isAuthenticated ? <Navigate to={getDefaultRedirect()} replace /> : <Login />} 
         />
         
         {/* Protected Routes */}
@@ -59,15 +77,43 @@ export function AdminRoutes() {
             <AdminLayout />
           </ProtectedRoute>
         }>
-          <Route index element={<Navigate to="/student-info" replace />} />
-          <Route path="dashboard" element={<DashboardPage />} />
-          <Route path="analytics" element={<AnalyticsPage />} />
-          <Route path="ai-chatbot" element={<ChatbotInterface />} />
-          <Route path="student-info" element={<StudentInfo />} />
-          <Route path="khai-bao-hoat-dong" element={<KhaiBaoHoatDong />} />
-          <Route path="quan-ly-su-kien-tham-gia" element={<QuanLySuKienThamGia />} />
-          <Route path="quan-ly-DRL" element={<QuanLyDRL />} />          
-          {/* Role-protected route - only class leaders can access */}
+          <Route index element={<Navigate to={getDefaultRedirect()} replace />} />
+          
+          {/* Student & Class Leader Routes */}
+          <Route 
+            path="student-info" 
+            element={
+              <RoleProtectedRoute allowedRoles={['student', 'class_leader']}>
+                <StudentInfo />
+              </RoleProtectedRoute>
+            } 
+          />
+          <Route 
+            path="khai-bao-hoat-dong" 
+            element={
+              <RoleProtectedRoute allowedRoles={['student', 'class_leader']}>
+                <KhaiBaoHoatDong />
+              </RoleProtectedRoute>
+            } 
+          />
+          <Route 
+            path="quan-ly-su-kien-tham-gia" 
+            element={
+              <RoleProtectedRoute allowedRoles={['student', 'class_leader']}>
+                <QuanLySuKienThamGia />
+              </RoleProtectedRoute>
+            } 
+          />
+          <Route 
+            path="quan-ly-DRL" 
+            element={
+              <RoleProtectedRoute allowedRoles={['student', 'class_leader']}>
+                <QuanLyDRL />
+              </RoleProtectedRoute>
+            } 
+          />
+          
+          {/* Class Leader Only Route */}
           <Route 
             path="quan-ly-thanh-vien" 
             element={
@@ -77,18 +123,58 @@ export function AdminRoutes() {
             } 
           />
           
+          {/* Admin & Teacher Routes */}
+          <Route 
+            path="admin-dashboard" 
+            element={
+              <RoleProtectedRoute allowedRoles={['admin', 'teacher']}>
+                <AdminDashboard />
+              </RoleProtectedRoute>
+            } 
+          />
+          <Route 
+            path="quan-ly-nguoi-dung" 
+            element={
+              <RoleProtectedRoute allowedRoles={['admin', 'teacher']}>
+                <QuanLyNguoiDung />
+              </RoleProtectedRoute>
+            } 
+          />
+          <Route 
+            path="quan-ly-minh-chung" 
+            element={
+              <RoleProtectedRoute allowedRoles={['admin', 'teacher']}>
+                <QuanLyMinhChung />
+              </RoleProtectedRoute>
+            } 
+          />
+          
+          {/* Admin Only Route */}
+          <Route 
+            path="quan-ly-tai-khoan" 
+            element={
+              <RoleProtectedRoute allowedRoles={['admin']}>
+                <QuanLyTaiKhoan />
+              </RoleProtectedRoute>
+            } 
+          />
+          
+          {/* Legacy routes */}
+          <Route path="dashboard" element={<DashboardPage />} />
+          <Route path="analytics" element={<AnalyticsPage />} />
+          <Route path="ai-chatbot" element={<ChatbotInterface />} />
           <Route path="settings" element={<SettingsPage />} />
           <Route path="menu1" element={<Navigate to="/menu1/submenu1" replace />} />
           <Route path="menu1/submenu1" element={<Submenu1 />} />
           <Route path="menu1/submenu2" element={<Submenu2 />} />
         </Route>
         
-        {/* Catch all - redirect to login if not authenticated, student-info if authenticated */}
+        {/* Catch all - redirect based on authentication and role */}
         <Route 
           path="*" 
           element={
             isAuthenticated ? 
-            <Navigate to="/student-info" replace /> : 
+            <Navigate to={getDefaultRedirect()} replace /> : 
             <Navigate to="/login" replace />
           } 
         />

@@ -1,5 +1,5 @@
 import React from "react"
-import { BarChart2, /* List, ChevronRight, */ Users, Calendar, FileText, MessageSquare } from "lucide-react"
+import { BarChart2, /* List, ChevronRight, */ Users, Calendar, FileText} from "lucide-react"
 import { UserRole } from "@/context/AuthContext"
 
 export type MenuItem = {
@@ -13,12 +13,7 @@ export type MenuItem = {
 }
 
 export const menuItems: MenuItem[] = [
-  { 
-    label: "AI Chat Bot", 
-    path: "/ai-chatbot", 
-    icon: <MessageSquare size={16} />,
-    allowedRoles: ['student', 'class_leader']
-  },
+  // Student & Class Leader menus
   { 
     label: "Thông tin sinh viên", 
     path: "/student-info", 
@@ -43,31 +38,39 @@ export const menuItems: MenuItem[] = [
     icon: <Calendar size={16} />,
     allowedRoles: ['student', 'class_leader']
   },
+  
+  // Class Leader only
   { 
     label: "Quản lý thành viên", 
     path: "/quan-ly-thanh-vien", 
     icon: <Users size={16} />,
-    allowedRoles: ['class_leader'] // Chỉ lớp trưởng mới thấy
+    allowedRoles: ['class_leader']
   },
-/*   {
-    label: "Menu1",
-    path: "/menu1",
-    icon: <List size={16} />,
-    allowedRoles: ['student', 'class_leader'],
-    children: [
-      { 
-        label: "Submenu1", 
-        path: "/menu1/submenu1", 
-        icon: <ChevronRight size={16} />,
-        allowedRoles: ['student', 'class_leader']
-      },
-      { 
-        label: "Submenu2", 
-        path: "/menu1/submenu2", 
-        icon: <ChevronRight size={16} />,
-        allowedRoles: ['student', 'class_leader']
-      },
-    ],
+
+  // Admin & Teacher menus
+  { 
+    label: "Admin Dashboard", 
+    path: "/admin-dashboard", 
+    icon: <BarChart2 size={16} />,
+    allowedRoles: ['admin', 'teacher']
+  },
+  { 
+    label: "Quản lý người dùng", 
+    path: "/quan-ly-nguoi-dung", 
+    icon: <Users size={16} />,
+    allowedRoles: ['admin', 'teacher']
+  },
+  { 
+    label: "Quản lý minh chứng", 
+    path: "/quan-ly-minh-chung", 
+    icon: <FileText size={16} />,
+    allowedRoles: ['admin', 'teacher']
+  },
+/*   { 
+    label: "Quản lý tài khoản", 
+    path: "/quan-ly-tai-khoan", 
+    icon: <Users size={16} />,
+    allowedRoles: ['admin']
   }, */
 ]
 
