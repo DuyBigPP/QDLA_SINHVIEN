@@ -49,22 +49,34 @@ export const menuItems: MenuItem[] = [
 
   // Admin & Teacher menus
   { 
-    label: "Admin Dashboard", 
+    label: "Dashboard", 
     path: "/admin-dashboard", 
     icon: <BarChart2 size={16} />,
     allowedRoles: ['admin', 'teacher']
   },
   { 
+    label: "Thông tin giảng viên", 
+    path: "/teacher-info", 
+    icon: <Users size={16} />,
+    allowedRoles: ['teacher']
+  },
+  { 
     label: "Quản lý người dùng", 
     path: "/quan-ly-nguoi-dung", 
     icon: <Users size={16} />,
-    allowedRoles: ['admin', 'teacher']
+    allowedRoles: ['admin']
   },
   { 
-    label: "Quản lý minh chứng", 
+    label: "Đầu mục DRL", 
+    path: "/dau-muc-drl", 
+    icon: <FileText size={16} />,
+    allowedRoles: ['admin']
+  },
+  { 
+    label: "Phê duyệt ĐRL", 
     path: "/quan-ly-minh-chung", 
     icon: <FileText size={16} />,
-    allowedRoles: ['admin', 'teacher']
+    allowedRoles: ['teacher']
   },
 /*   { 
     label: "Quản lý tài khoản", 

@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/context/AuthContext';
-import { criteriaService, type Criteria, type SubCriteria } from '@/service/criteriaService';
+import { criteriaService, type Criteria } from '@/service/criteriaService';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -33,7 +33,8 @@ import {
   Clock,
   Star,
   Download,
-  Upload
+  Upload,
+  Image
 } from 'lucide-react';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 
@@ -99,6 +100,24 @@ interface SemesterSummary {
     trungBinh: number;
     yeu: number;
   };
+}
+
+interface Evidence {
+  id: string;
+  studentId: string;
+  studentName: string;
+  subcriteriaId: number;
+  subcriteriaName: string;
+  description: string;
+  filePath: string;
+  fileType: 'image' | 'pdf' | 'doc';
+  status: 'pending' | 'approved' | 'rejected';
+  submittedAt: string;
+  reviewedAt?: string;
+  reviewedBy?: string;
+  reviewNote?: string;
+  semester: string;
+  academicYear: string;
 }
 
 // Mock data
@@ -224,6 +243,116 @@ const mockSemesters: SemesterSummary[] = [
   }
 ];
 
+const mockEvidences: Evidence[] = [
+  {
+    id: '1',
+    studentId: 'SV001',
+    studentName: 'Nguyễn Văn Đạt',
+    subcriteriaId: 8,
+    subcriteriaName: 'Tham gia hiến máu nhân đạo',
+    description: 'Tham gia hiến máu nhân đạo tại trường đại học',
+    filePath: '/mock/evidence/hien_mau_certificate.pdf',
+    fileType: 'pdf',
+    status: 'pending',
+    submittedAt: '2024-12-15',
+    semester: 'HK1',
+    academicYear: '2024-2025'
+  },
+  {
+    id: '2',
+    studentId: 'SV002',
+    studentName: 'Trần Thị Duy',
+    subcriteriaId: 9,
+    subcriteriaName: 'Tham gia hoạt động tình nguyện',
+    description: 'Tham gia hoạt động tình nguyện dọn dẹp môi trường',
+    filePath: '/mock/evidence/tinh_nguyen_photo.jpg',
+    fileType: 'image',
+    status: 'approved',
+    submittedAt: '2024-12-10',
+    reviewedAt: '2024-12-12',
+    reviewedBy: 'Lớp trưởng',
+    reviewNote: 'Minh chứng hợp lệ',
+    semester: 'HK1',
+    academicYear: '2024-2025'
+  },
+  {
+    id: '3',
+    studentId: 'SV003',
+    studentName: 'Lê Văn Cường',
+    subcriteriaId: 11,
+    subcriteriaName: 'Tham gia cuộc thi học thuật',
+    description: 'Đạt giải nhì cuộc thi lập trình cấp khoa',
+    filePath: '/mock/evidence/giai_lap_trinh.pdf',
+    fileType: 'pdf',
+    status: 'pending',
+    submittedAt: '2024-12-18',
+    semester: 'HK1',
+    academicYear: '2024-2025'
+  },
+  {
+    id: '4',
+    studentId: 'SV004',
+    studentName: 'Phạm Thị Dung',
+    subcriteriaId: 15,
+    subcriteriaName: 'Thành tích trong hoạt động văn hóa thể thao',
+    description: 'Tham gia đội bóng đá khoa và đạt giải ba',
+    filePath: '/mock/evidence/the_thao_certificate.jpg',
+    fileType: 'image',
+    status: 'rejected',
+    submittedAt: '2024-12-05',
+    reviewedAt: '2024-12-07',
+    reviewedBy: 'Lớp trưởng',
+    reviewNote: 'Chứng từ không rõ ràng, cần bổ sung',
+    semester: 'HK1',
+    academicYear: '2024-2025'
+  },
+  {
+    id: '5',
+    studentId: 'SV005',
+    studentName: 'Hoàng Văn Em',
+    subcriteriaId: 4,
+    subcriteriaName: 'Ý thức và thái độ tham gia các hoạt động ngoại khóa',
+    description: 'Tham gia câu lạc bộ học thuật và hoạt động tích cực',
+    filePath: '/mock/evidence/clb_hoc_thuat.pdf',
+    fileType: 'pdf',
+    status: 'pending',
+    submittedAt: '2024-12-20',
+    semester: 'HK1',
+    academicYear: '2024-2025'
+  },
+  {
+    id: '6',
+    studentId: 'SV001',
+    studentName: 'Nguyễn Văn Đạt',
+    subcriteriaId: 9,
+    subcriteriaName: 'Tham gia hoạt động tình nguyện',
+    description: 'Tham gia hoạt động tình nguyện mùa hè xanh',
+    filePath: '/mock/evidence/mua_he_xanh.png',
+    fileType: 'image',
+    status: 'approved',
+    submittedAt: '2024-11-30',
+    reviewedAt: '2024-12-01',
+    reviewedBy: 'Lớp trưởng',
+    reviewNote: 'Hoạt động tích cực, minh chứng đầy đủ',
+    semester: 'HK1',
+    academicYear: '2024-2025'
+  },
+  {
+    id: '7',
+    studentId: 'SV002',
+    studentName: 'Trần Thị Duy',
+    subcriteriaId: 11,
+    subcriteriaName: 'Tham gia cuộc thi học thuật',
+    description: 'Tham gia cuộc thi nghiên cứu khoa học sinh viên',
+    filePath: '/mock/evidence/nghien_cuu_khoa_hoc.pdf',
+    fileType: 'pdf',
+    status: 'pending',
+    submittedAt: '2024-12-22',
+    semester: 'HK1',
+    academicYear: '2024-2025'
+  }
+];
+
 const rankColors = {
   'Xuất sắc': 'bg-green-100 text-green-800',
   'Tốt': 'bg-blue-100 text-blue-800',
@@ -256,10 +385,10 @@ const calculateRank = (score: number): DRLRecord['rank'] => {
 
 const QuanLyDRL = () => {
   const { user } = useAuth();
-  
-  // State management - prioritize real API data over mock data
+    // State management - prioritize real API data over mock data
   const [drlRecords, setDrlRecords] = useState<DRLRecord[]>([]);
   const [semesters] = useState<SemesterSummary[]>(mockSemesters);
+  const [evidences, setEvidences] = useState<Evidence[]>([]);
   
   // Criteria-based system state
   const [criteria, setCriteria] = useState<Record<string, Criteria>>({});
@@ -276,6 +405,12 @@ const QuanLyDRL = () => {
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isViewDialogOpen, setIsViewDialogOpen] = useState(false);
   const [selectedRecord, setSelectedRecord] = useState<DRLRecord | null>(null);
+  
+  // Evidence management state
+  const [selectedEvidence, setSelectedEvidence] = useState<Evidence | null>(null);
+  const [isEvidenceDialogOpen, setIsEvidenceDialogOpen] = useState(false);
+  const [evidenceFilter, setEvidenceFilter] = useState<string>('all');
+  const [evidenceSearch, setEvidenceSearch] = useState('');
   const [newRecord, setNewRecord] = useState<Partial<DRLRecord>>({
     studentId: user?.role === 'student' ? 'SV001' : '',
     studentName: user?.role === 'student' ? 'Đạtn' : '',
@@ -296,7 +431,8 @@ const QuanLyDRL = () => {
       setDataLoading(true);
       await Promise.all([
         loadCriteria(),
-        loadDRLRecords()
+        loadDRLRecords(),
+        loadEvidences()
       ]);
       setDataLoading(false);
     };
@@ -321,7 +457,6 @@ const QuanLyDRL = () => {
       setLoading(false);
     }
   };
-
   const loadDRLRecords = async () => {
     try {
       // Try to load real DRL records from API
@@ -332,6 +467,16 @@ const QuanLyDRL = () => {
       console.error('Error loading DRL records:', error);
       // Fallback to mock data
       setDrlRecords(mockDRLRecords);
+    }
+  };
+
+  const loadEvidences = async () => {
+    try {
+      // Use mock data for evidences
+      setEvidences(mockEvidences);
+    } catch (error) {
+      console.error('Error loading evidences:', error);
+      setEvidences(mockEvidences);
     }
   };
 
@@ -474,11 +619,59 @@ const QuanLyDRL = () => {
     setSelectedRecord(record);
     setIsViewDialogOpen(true);
   };
-
   const handleEditClick = (record: DRLRecord) => {
     setSelectedRecord(record);
     setIsEditDialogOpen(true);
   };
+
+  // Evidence management functions
+  const handleViewEvidence = (evidence: Evidence) => {
+    setSelectedEvidence(evidence);
+    setIsEvidenceDialogOpen(true);
+  };
+
+  const handleApproveEvidence = (evidenceId: string, note?: string) => {
+    setEvidences(evidences.map(evidence => 
+      evidence.id === evidenceId 
+        ? {
+            ...evidence,
+            status: 'approved',
+            reviewedAt: new Date().toISOString().split('T')[0],
+            reviewedBy: user?.username || 'Lớp trưởng',
+            reviewNote: note || 'Đã phê duyệt minh chứng'
+          }
+        : evidence
+    ));
+    toast.success('Đã phê duyệt minh chứng thành công');
+    setIsEvidenceDialogOpen(false);
+  };
+
+  const handleRejectEvidence = (evidenceId: string, note: string) => {
+    setEvidences(evidences.map(evidence => 
+      evidence.id === evidenceId 
+        ? {
+            ...evidence,
+            status: 'rejected',
+            reviewedAt: new Date().toISOString().split('T')[0],
+            reviewedBy: user?.username || 'Lớp trưởng',
+            reviewNote: note
+          }
+        : evidence
+    ));
+    toast.success('Đã từ chối minh chứng');
+    setIsEvidenceDialogOpen(false);
+  };
+
+  // Filter evidences
+  const filteredEvidences = evidences.filter(evidence => {
+    const semesterMatch = evidence.semester + ' ' + evidence.academicYear === selectedSemester;
+    const searchMatch = evidence.studentName.toLowerCase().includes(evidenceSearch.toLowerCase()) ||
+                       evidence.studentId.toLowerCase().includes(evidenceSearch.toLowerCase()) ||
+                       evidence.description.toLowerCase().includes(evidenceSearch.toLowerCase());
+    const statusMatch = evidenceFilter === 'all' || evidence.status === evidenceFilter;
+    
+    return semesterMatch && searchMatch && statusMatch;
+  });
 
   // Calculate current semester stats
   const currentSemesterData = semesters.find(s => 
@@ -492,7 +685,8 @@ const QuanLyDRL = () => {
           <div className="text-center">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto"></div>
             <p className="mt-4 text-lg font-medium">Đang tải dữ liệu điểm rèn luyện...</p>
-            <p className="mt-2 text-sm text-muted-foreground">Vui lòng chờ trong giây lát</p>          </div>
+            <p className="mt-2 text-sm text-muted-foreground">Vui lòng chờ trong giây lát</p>
+          </div>
         </div>
       ) : (
         <>
@@ -690,7 +884,7 @@ const QuanLyDRL = () => {
                 <Users className="h-8 w-8 text-blue-500" />
                 <div>
                   <p className="text-sm text-muted-foreground">Tổng số SV</p>
-                  <p className="text-2xl font-bold">{currentSemesterData.totalStudents}</p>
+                  <p className="text-2xl font-bold">5</p>
                 </div>
               </div>
             </CardContent>
@@ -714,7 +908,7 @@ const QuanLyDRL = () => {
                 <Star className="h-8 w-8 text-yellow-500" />
                 <div>
                   <p className="text-sm text-muted-foreground">Xuất sắc</p>
-                  <p className="text-2xl font-bold">{currentSemesterData.distribution.xuatSac}</p>
+                  <p className="text-2xl font-bold">2</p>
                 </div>
               </div>
             </CardContent>
@@ -726,7 +920,7 @@ const QuanLyDRL = () => {
                 <Award className="h-8 w-8 text-blue-500" />
                 <div>
                   <p className="text-sm text-muted-foreground">Tốt</p>
-                  <p className="text-2xl font-bold">{currentSemesterData.distribution.tot}</p>
+                  <p className="text-2xl font-bold">2</p>
                 </div>
               </div>
             </CardContent>
@@ -738,7 +932,7 @@ const QuanLyDRL = () => {
                 <Target className="h-8 w-8 text-orange-500" />
                 <div>
                   <p className="text-sm text-muted-foreground">Khá</p>
-                  <p className="text-2xl font-bold">{currentSemesterData.distribution.kha}</p>
+                  <p className="text-2xl font-bold">1</p>
                 </div>
               </div>
             </CardContent>
@@ -758,13 +952,13 @@ const QuanLyDRL = () => {
             </CardContent>
           </Card>
         </div>
-      )}
-
-      {/* Main Content */}
+      )}      {/* Main Content */}
       <Tabs defaultValue="records" className="space-y-4">
         <TabsList>
           <TabsTrigger value="records">Bảng điểm</TabsTrigger>
           <TabsTrigger value="criteria">Tiêu chí đánh giá</TabsTrigger>
+          {user?.role === 'class_leader' && <TabsTrigger value="evidence">Phê duyệt minh chứng</TabsTrigger>}
+          {user?.role === 'class_leader' && <TabsTrigger value="evidence-history">Lịch sử minh chứng</TabsTrigger>}
           {user?.role === 'class_leader' && <TabsTrigger value="summary">Thống kê</TabsTrigger>}
           <TabsTrigger value="history">Lịch sử</TabsTrigger>
         </TabsList>
@@ -1131,103 +1325,367 @@ const QuanLyDRL = () => {
           </Card>
         </TabsContent>
 
-        {/* Summary Tab - Class Leader Only */}
+        {/* Evidence Approval Tab - Class Leader Only */}
+        {user?.role === 'class_leader' && (
+          <TabsContent value="evidence" className="space-y-4">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <FileText className="h-5 w-5" />
+                  Phê duyệt minh chứng
+                </CardTitle>
+                <CardDescription>
+                  Xem xét và phê duyệt các minh chứng do sinh viên nộp
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {/* Filters */}
+                <div className="flex flex-wrap gap-4">
+                  <div className="flex-1 min-w-[200px]">
+                    <Input
+                      placeholder="Tìm kiếm sinh viên..."
+                      value={evidenceSearch}
+                      onChange={(e) => setEvidenceSearch(e.target.value)}
+                      className="w-full"
+                    />
+                  </div>
+                  <Select value={evidenceFilter} onValueChange={setEvidenceFilter}>
+                    <SelectTrigger className="w-[180px]">
+                      <SelectValue placeholder="Trạng thái" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">Tất cả</SelectItem>
+                      <SelectItem value="pending">Chờ duyệt</SelectItem>
+                      <SelectItem value="approved">Đã duyệt</SelectItem>
+                      <SelectItem value="rejected">Từ chối</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                {/* Evidence Table */}
+                <div className="border rounded-lg">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Sinh viên</TableHead>
+                        <TableHead>Tiêu chí</TableHead>
+                        <TableHead>Mô tả</TableHead>
+                        <TableHead>Tệp đính kèm</TableHead>
+                        <TableHead>Ngày nộp</TableHead>
+                        <TableHead>Trạng thái</TableHead>
+                        <TableHead>Thao tác</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {filteredEvidences.map((evidence) => (
+                        <TableRow key={evidence.id}>
+                          <TableCell>
+                            <div>
+                              <div className="font-medium">{evidence.studentName}</div>
+                              <div className="text-sm text-muted-foreground">{evidence.studentId}</div>
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            <div className="max-w-[200px]">
+                              <div className="font-medium text-sm">{evidence.subcriteriaName}</div>
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            <div className="max-w-[250px] text-sm">
+                              {evidence.description}
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            <div className="flex items-center gap-2">
+                              {evidence.fileType === 'image' && <Image className="h-4 w-4" />}
+                              {evidence.fileType === 'pdf' && <FileText className="h-4 w-4" />}
+                              {evidence.fileType === 'doc' && <FileText className="h-4 w-4" />}
+                              <span className="text-sm">
+                                {evidence.filePath.split('/').pop()}
+                              </span>
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            <div className="text-sm">
+                              {new Date(evidence.submittedAt).toLocaleDateString('vi-VN')}
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            <Badge 
+                              variant={
+                                evidence.status === 'approved' ? 'default' :
+                                evidence.status === 'rejected' ? 'destructive' : 'secondary'
+                              }
+                            >
+                              {evidence.status === 'pending' ? 'Chờ duyệt' :
+                               evidence.status === 'approved' ? 'Đã duyệt' : 'Từ chối'}
+                            </Badge>
+                          </TableCell>
+                          <TableCell>
+                            <div className="flex gap-2">
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => handleViewEvidence(evidence)}
+                              >
+                                <Eye className="h-4 w-4" />
+                              </Button>
+                              {evidence.status === 'pending' && (
+                                <>
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => handleApproveEvidence(evidence.id)}
+                                    className="text-green-600 hover:text-green-700"
+                                  >
+                                    <CheckCircle className="h-4 w-4" />
+                                  </Button>                                  <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => handleRejectEvidence(evidence.id, 'Từ chối nhanh')}
+                                    className="text-red-600 hover:text-red-700"
+                                  >
+                                    <XCircle className="h-4 w-4" />
+                                  </Button>
+                                </>
+                              )}
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+
+                {filteredEvidences.length === 0 && (
+                  <div className="text-center py-8 text-muted-foreground">
+                    Không có minh chứng nào phù hợp với bộ lọc
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+        )}
+
+        {/* Evidence History Tab - Class Leader Only */}
+        {user?.role === 'class_leader' && (
+          <TabsContent value="evidence-history" className="space-y-4">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Clock className="h-5 w-5" />
+                  Lịch sử minh chứng
+                </CardTitle>
+                <CardDescription>
+                  Xem lại các minh chứng đã được xử lý
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {/* Filters */}
+                <div className="flex flex-wrap gap-4">
+                  <div className="flex-1 min-w-[200px]">
+                    <Input
+                      placeholder="Tìm kiếm sinh viên..."
+                      value={evidenceSearch}
+                      onChange={(e) => setEvidenceSearch(e.target.value)}
+                      className="w-full"
+                    />
+                  </div>
+                  <Select value={evidenceFilter} onValueChange={setEvidenceFilter}>
+                    <SelectTrigger className="w-[180px]">
+                      <SelectValue placeholder="Trạng thái" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">Tất cả</SelectItem>
+                      <SelectItem value="approved">Đã duyệt</SelectItem>
+                      <SelectItem value="rejected">Từ chối</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                {/* History Table */}
+                <div className="border rounded-lg">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Sinh viên</TableHead>
+                        <TableHead>Tiêu chí</TableHead>
+                        <TableHead>Mô tả</TableHead>
+                        <TableHead>Ngày nộp</TableHead>
+                        <TableHead>Ngày xử lý</TableHead>
+                        <TableHead>Trạng thái</TableHead>
+                        <TableHead>Ghi chú</TableHead>
+                        <TableHead>Thao tác</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {evidences
+                        .filter(evidence => evidence.status !== 'pending')
+                        .filter(evidence => 
+                          evidenceFilter === 'all' || evidence.status === evidenceFilter
+                        )
+                        .filter(evidence =>
+                          evidenceSearch === '' || 
+                          evidence.studentName.toLowerCase().includes(evidenceSearch.toLowerCase()) ||
+                          evidence.studentId.toLowerCase().includes(evidenceSearch.toLowerCase())
+                        )
+                        .map((evidence) => (
+                          <TableRow key={evidence.id}>
+                            <TableCell>
+                              <div>
+                                <div className="font-medium">{evidence.studentName}</div>
+                                <div className="text-sm text-muted-foreground">{evidence.studentId}</div>
+                              </div>
+                            </TableCell>
+                            <TableCell>
+                              <div className="max-w-[200px]">
+                                <div className="font-medium text-sm">{evidence.subcriteriaName}</div>
+                              </div>
+                            </TableCell>
+                            <TableCell>
+                              <div className="max-w-[250px] text-sm">
+                                {evidence.description}
+                              </div>
+                            </TableCell>
+                            <TableCell>
+                              <div className="text-sm">
+                                {new Date(evidence.submittedAt).toLocaleDateString('vi-VN')}
+                              </div>
+                            </TableCell>
+                            <TableCell>
+                              <div className="text-sm">
+                                {evidence.reviewedAt ? 
+                                  new Date(evidence.reviewedAt).toLocaleDateString('vi-VN') : 
+                                  '-'
+                                }
+                              </div>
+                            </TableCell>
+                            <TableCell>
+                              <Badge 
+                                variant={evidence.status === 'approved' ? 'default' : 'destructive'}
+                              >
+                                {evidence.status === 'approved' ? 'Đã duyệt' : 'Từ chối'}
+                              </Badge>
+                            </TableCell>                            <TableCell>
+                              <div className="max-w-[200px] text-sm">
+                                {evidence.reviewNote || '-'}
+                              </div>
+                            </TableCell>
+                            <TableCell>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => handleViewEvidence(evidence)}
+                              >
+                                <Eye className="h-4 w-4" />
+                              </Button>
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                    </TableBody>
+                  </Table>
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+        )}
+
+        {/* Summary Tab */}
         {user?.role === 'class_leader' && (
           <TabsContent value="summary" className="space-y-4">
-            <div className="grid gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               <Card>
                 <CardHeader>
-                  <CardTitle>Thống kê phân bố điểm</CardTitle>
+                  <CardTitle>Tổng quan</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  {currentSemesterData && (
-                    <div className="space-y-4">
-                      <div className="grid grid-cols-5 gap-4">
-                        <div className="text-center">
-                          <div className="text-2xl font-bold text-green-600">
-                            {currentSemesterData.distribution.xuatSac}
-                          </div>
-                          <div className="text-sm text-muted-foreground">Xuất sắc</div>
-                          <Progress 
-                            value={(currentSemesterData.distribution.xuatSac / currentSemesterData.totalStudents) * 100} 
-                            className="mt-2 h-2"
-                          />
-                        </div>
-                        <div className="text-center">
-                          <div className="text-2xl font-bold text-blue-600">
-                            {currentSemesterData.distribution.tot}
-                          </div>
-                          <div className="text-sm text-muted-foreground">Tốt</div>
-                          <Progress 
-                            value={(currentSemesterData.distribution.tot / currentSemesterData.totalStudents) * 100} 
-                            className="mt-2 h-2"
-                          />
-                        </div>
-                        <div className="text-center">
-                          <div className="text-2xl font-bold text-yellow-600">
-                            {currentSemesterData.distribution.kha}
-                          </div>
-                          <div className="text-sm text-muted-foreground">Khá</div>
-                          <Progress 
-                            value={(currentSemesterData.distribution.kha / currentSemesterData.totalStudents) * 100} 
-                            className="mt-2 h-2"
-                          />
-                        </div>
-                        <div className="text-center">
-                          <div className="text-2xl font-bold text-orange-600">
-                            {currentSemesterData.distribution.trungBinh}
-                          </div>
-                          <div className="text-sm text-muted-foreground">Trung bình</div>
-                          <Progress 
-                            value={(currentSemesterData.distribution.trungBinh / currentSemesterData.totalStudents) * 100} 
-                            className="mt-2 h-2"
-                          />
-                        </div>
-                        <div className="text-center">
-                          <div className="text-2xl font-bold text-red-600">
-                            {currentSemesterData.distribution.yeu}
-                          </div>
-                          <div className="text-sm text-muted-foreground">Yếu</div>
-                          <Progress 
-                            value={(currentSemesterData.distribution.yeu / currentSemesterData.totalStudents) * 100} 
-                            className="mt-2 h-2"
-                          />
-                        </div>
+                  <div className="space-y-4">
+                    <div className="flex justify-between">
+                      <span>Tổng số sinh viên:</span>
+                      <span className="font-bold">{currentSemesterData?.totalStudents || 0}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span>Điểm trung bình:</span>
+                      <span className="font-bold">{currentSemesterData?.averageScore || 0}</span>
+                    </div>
+                    <Separator />
+                    <div className="space-y-2">
+                      <div className="flex justify-between">
+                        <span>Xuất sắc:</span>
+                        <span className="text-green-600 font-bold">{currentSemesterData?.distribution.xuatSac || 0}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span>Tốt:</span>
+                        <span className="text-blue-600 font-bold">{currentSemesterData?.distribution.tot || 0}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span>Khá:</span>
+                        <span className="text-yellow-600 font-bold">{currentSemesterData?.distribution.kha || 0}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span>Trung bình:</span>
+                        <span className="text-orange-600 font-bold">{currentSemesterData?.distribution.trungBinh || 0}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span>Yếu:</span>
+                        <span className="text-red-600 font-bold">{currentSemesterData?.distribution.yeu || 0}</span>
                       </div>
                     </div>
-                  )}
+                  </div>
                 </CardContent>
               </Card>
 
               <Card>
                 <CardHeader>
-                  <CardTitle>Tiến độ nộp báo cáo</CardTitle>
+                  <CardTitle>Tiến độ đánh giá</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <div className="grid grid-cols-4 gap-4">
-                    <div className="text-center">
-                      <div className="text-2xl font-bold text-gray-600">
-                        {filteredRecords.filter(r => r.status === 'draft').length}
+                  <div className="space-y-4">
+                    <div>
+                      <div className="flex justify-between mb-2">
+                        <span>Đã hoàn thành</span>
+                        <span>{filteredRecords.filter(r => r.status === 'approved').length}/{filteredRecords.length}</span>
                       </div>
-                      <div className="text-sm text-muted-foreground">Bản nháp</div>
+                      <Progress 
+                        value={(filteredRecords.filter(r => r.status === 'approved').length / filteredRecords.length) * 100} 
+                        className="h-2"
+                      />
                     </div>
-                    <div className="text-center">
-                      <div className="text-2xl font-bold text-yellow-600">
-                        {filteredRecords.filter(r => r.status === 'submitted').length}
+                    <div>
+                      <div className="flex justify-between mb-2">
+                        <span>Đang chờ duyệt</span>
+                        <span>{filteredRecords.filter(r => r.status === 'submitted').length}</span>
                       </div>
-                      <div className="text-sm text-muted-foreground">Chờ duyệt</div>
+                      <Progress 
+                        value={(filteredRecords.filter(r => r.status === 'submitted').length / filteredRecords.length) * 100} 
+                        className="h-2"
+                      />
                     </div>
-                    <div className="text-center">
-                      <div className="text-2xl font-bold text-green-600">
-                        {filteredRecords.filter(r => r.status === 'approved').length}
-                      </div>
-                      <div className="text-sm text-muted-foreground">Đã duyệt</div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader>
+                  <CardTitle>Minh chứng</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-4">
+                    <div className="flex justify-between">
+                      <span>Tổng minh chứng:</span>
+                      <span className="font-bold">{evidences.length}</span>
                     </div>
-                    <div className="text-center">
-                      <div className="text-2xl font-bold text-red-600">
-                        {filteredRecords.filter(r => r.status === 'rejected').length}
-                      </div>
-                      <div className="text-sm text-muted-foreground">Từ chối</div>
+                    <div className="flex justify-between">
+                      <span>Chờ duyệt:</span>
+                      <span className="text-yellow-600 font-bold">{evidences.filter(e => e.status === 'pending').length}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span>Đã duyệt:</span>
+                      <span className="text-green-600 font-bold">{evidences.filter(e => e.status === 'approved').length}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span>Từ chối:</span>
+                      <span className="text-red-600 font-bold">{evidences.filter(e => e.status === 'rejected').length}</span>
                     </div>
                   </div>
                 </CardContent>
@@ -1240,271 +1698,201 @@ const QuanLyDRL = () => {
         <TabsContent value="history" className="space-y-4">
           <Card>
             <CardHeader>
-              <CardTitle>Lịch sử các học kỳ</CardTitle>
+              <CardTitle>Lịch sử thay đổi</CardTitle>
               <CardDescription>
-                Tổng hợp điểm rèn luyện qua các học kỳ
+                Theo dõi các thay đổi và cập nhật điểm rèn luyện
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="space-y-4">
-                {semesters.map((semester) => (
-                  <div key={`${semester.semester}-${semester.academicYear}`} className="border rounded-lg p-4">
-                    <div className="flex items-center justify-between mb-3">
-                      <h4 className="font-medium">{semester.semester} {semester.academicYear}</h4>
-                      <Badge variant="outline">
-                        Điểm TB: {semester.averageScore.toFixed(1)}
-                      </Badge>
-                    </div>
-                    <div className="grid grid-cols-5 gap-4 text-sm">
-                      <div className="text-center">
-                        <div className="font-medium text-green-600">{semester.distribution.xuatSac}</div>
-                        <div className="text-muted-foreground">Xuất sắc</div>
-                      </div>
-                      <div className="text-center">
-                        <div className="font-medium text-blue-600">{semester.distribution.tot}</div>
-                        <div className="text-muted-foreground">Tốt</div>
-                      </div>
-                      <div className="text-center">
-                        <div className="font-medium text-yellow-600">{semester.distribution.kha}</div>
-                        <div className="text-muted-foreground">Khá</div>
-                      </div>
-                      <div className="text-center">
-                        <div className="font-medium text-orange-600">{semester.distribution.trungBinh}</div>
-                        <div className="text-muted-foreground">Trung bình</div>
-                      </div>
-                      <div className="text-center">
-                        <div className="font-medium text-red-600">{semester.distribution.yeu}</div>
-                        <div className="text-muted-foreground">Yếu</div>
-                      </div>
-                    </div>
-                  </div>
-                ))}
+              <div className="text-center text-muted-foreground py-8">
+                <FileText className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                <p>Chưa có lịch sử thay đổi nào</p>
               </div>
             </CardContent>
           </Card>
         </TabsContent>
       </Tabs>
 
+      {/* Evidence Dialog */}
+      <Dialog open={isEvidenceDialogOpen} onOpenChange={setIsEvidenceDialogOpen}>
+        <DialogContent className="max-w-4xl">
+          <DialogHeader>
+            <DialogTitle>Chi tiết minh chứng</DialogTitle>
+            <DialogDescription>
+              Xem và phê duyệt minh chứng của sinh viên
+            </DialogDescription>
+          </DialogHeader>
+          
+          {selectedEvidence && (
+            <div className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label>Sinh viên</Label>
+                  <p className="font-medium">{selectedEvidence.studentName} ({selectedEvidence.studentId})</p>
+                </div>
+                <div>
+                  <Label>Tiêu chí</Label>
+                  <p className="font-medium">{selectedEvidence.subcriteriaName}</p>
+                </div>
+                <div>
+                  <Label>Mô tả</Label>
+                  <p>{selectedEvidence.description}</p>
+                </div>
+                <div>
+                  <Label>Trạng thái</Label>
+                  <Badge variant={
+                    selectedEvidence.status === 'approved' ? 'default' :
+                    selectedEvidence.status === 'rejected' ? 'destructive' : 'secondary'
+                  }>
+                    {selectedEvidence.status === 'pending' ? 'Chờ duyệt' :
+                     selectedEvidence.status === 'approved' ? 'Đã duyệt' : 'Từ chối'}
+                  </Badge>
+                </div>
+              </div>
+
+              <div>
+                <Label>File minh chứng</Label>
+                <div className="border rounded-lg p-4 mt-2">
+                  <div className="flex items-center space-x-2">
+                    <FileText className="h-6 w-6" />
+                    <span>{selectedEvidence.filePath.split('/').pop()}</span>
+                    <Button variant="outline" size="sm">
+                      <Download className="h-4 w-4 mr-2" />
+                      Tải xuống
+                    </Button>
+                  </div>
+                </div>
+              </div>
+
+              {selectedEvidence.status === 'pending' && user?.role === 'class_leader' && (
+                <div className="space-y-4">
+                  <div>
+                    <Label htmlFor="review-note">Ghi chú đánh giá</Label>
+                    <Textarea id="review-note" placeholder="Nhập ghi chú..." />
+                  </div>
+                </div>
+              )}
+
+              {selectedEvidence.reviewNote && (
+                <div>
+                  <Label>Ghi chú đánh giá</Label>
+                  <p className="text-sm text-muted-foreground mt-1">{selectedEvidence.reviewNote}</p>
+                </div>
+              )}
+            </div>
+          )}
+
+          <DialogFooter>
+            {selectedEvidence?.status === 'pending' && user?.role === 'class_leader' && (
+              <>
+                <Button 
+                  variant="destructive" 
+                  onClick={() => {
+                    const note = (document.getElementById('review-note') as HTMLTextAreaElement)?.value || 'Minh chứng không hợp lệ';
+                    handleRejectEvidence(selectedEvidence.id, note);
+                  }}
+                >
+                  <XCircle className="h-4 w-4 mr-2" />
+                  Từ chối
+                </Button>
+                <Button 
+                  onClick={() => {
+                    const note = (document.getElementById('review-note') as HTMLTextAreaElement)?.value || 'Minh chứng hợp lệ';
+                    handleApproveEvidence(selectedEvidence.id, note);
+                  }}
+                >
+                  <CheckCircle className="h-4 w-4 mr-2" />
+                  Phê duyệt
+                </Button>
+              </>
+            )}
+            <Button variant="outline" onClick={() => setIsEvidenceDialogOpen(false)}>
+              Đóng
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       {/* View Record Dialog */}
       <Dialog open={isViewDialogOpen} onOpenChange={setIsViewDialogOpen}>
-        <DialogContent className="max-w-3xl">
+        <DialogContent className="max-w-2xl">
           <DialogHeader>
             <DialogTitle>Chi tiết điểm rèn luyện</DialogTitle>
           </DialogHeader>
           {selectedRecord && (
-            <div className="space-y-6">
+            <div className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <Label className="text-sm font-medium text-muted-foreground">Sinh viên</Label>
-                  <p className="font-medium">{selectedRecord.studentName}</p>
-                  <p className="text-sm text-muted-foreground">{selectedRecord.studentId}</p>
+                  <Label>Sinh viên</Label>
+                  <p className="font-medium">{selectedRecord.studentName} ({selectedRecord.studentId})</p>
                 </div>
                 <div>
-                  <Label className="text-sm font-medium text-muted-foreground">Học kỳ</Label>
-                  <p className="font-medium">{selectedRecord.semester} {selectedRecord.academicYear}</p>
+                  <Label>Học kỳ</Label>
+                  <p>{selectedRecord.semester} {selectedRecord.academicYear}</p>
                 </div>
               </div>
               
-              <Separator />
-              
-              <div className="space-y-4">
-                <h4 className="font-medium">Chi tiết điểm số</h4>
-                <div className="grid grid-cols-5 gap-4">
-                  <div className="text-center p-3 border rounded-lg">
-                    <div className="text-2xl font-bold">{selectedRecord.category1}</div>
-                    <div className="text-xs text-muted-foreground">Ý thức học tập</div>
-                    <div className="text-xs text-muted-foreground">(0-25)</div>
-                  </div>
-                  <div className="text-center p-3 border rounded-lg">
-                    <div className="text-2xl font-bold">{selectedRecord.category2}</div>
-                    <div className="text-xs text-muted-foreground">Hiệu quả học tập</div>
-                    <div className="text-xs text-muted-foreground">(0-25)</div>
-                  </div>
-                  <div className="text-center p-3 border rounded-lg">
-                    <div className="text-2xl font-bold">{selectedRecord.category3}</div>
-                    <div className="text-xs text-muted-foreground">Chấp hành nội quy</div>
-                    <div className="text-xs text-muted-foreground">(0-25)</div>
-                  </div>
-                  <div className="text-center p-3 border rounded-lg">
-                    <div className="text-2xl font-bold">{selectedRecord.category4}</div>
-                    <div className="text-xs text-muted-foreground">Tham gia hoạt động</div>
-                    <div className="text-xs text-muted-foreground">(0-20)</div>
-                  </div>
-                  <div className="text-center p-3 border rounded-lg">
-                    <div className="text-2xl font-bold">{selectedRecord.category5}</div>
-                    <div className="text-xs text-muted-foreground">Phẩm chất công dân</div>
-                    <div className="text-xs text-muted-foreground">(0-20)</div>
-                  </div>
+              <div className="space-y-2">
+                <div className="flex justify-between">
+                  <span>Ý thức học tập:</span>
+                  <span className="font-bold">{selectedRecord.category1}/25</span>
                 </div>
-                
-                <div className="bg-gray-50 p-4 rounded-lg">
-                  <div className="flex justify-between items-center">
-                    <span className="text-lg font-medium">Tổng điểm:</span>
-                    <div className="text-right">
-                      <div className="text-2xl font-bold">{selectedRecord.totalScore}/115</div>
-                      <Badge className={rankColors[selectedRecord.rank]}>
-                        {selectedRecord.rank}
-                      </Badge>
-                    </div>
-                  </div>
+                <div className="flex justify-between">
+                  <span>Ý thức và hiệu quả trong học tập:</span>
+                  <span className="font-bold">{selectedRecord.category2}/25</span>
+                </div>
+                <div className="flex justify-between">
+                  <span>Ý thức và kết quả chấp hành nội quy:</span>
+                  <span className="font-bold">{selectedRecord.category3}/25</span>
+                </div>
+                <div className="flex justify-between">
+                  <span>Ý thức và hiệu quả tham gia hoạt động:</span>
+                  <span className="font-bold">{selectedRecord.category4}/20</span>
+                </div>
+                <div className="flex justify-between">
+                  <span>Phẩm chất công dân và quan hệ với cộng đồng:</span>
+                  <span className="font-bold">{selectedRecord.category5}/20</span>
+                </div>
+                <Separator />
+                <div className="flex justify-between text-lg font-bold">
+                  <span>Tổng điểm:</span>
+                  <span>{selectedRecord.totalScore}/115</span>
+                </div>
+                <div className="flex justify-between">
+                  <span>Xếp loại:</span>
+                  <Badge variant={
+                    selectedRecord.rank === 'Xuất sắc' ? 'default' :
+                    selectedRecord.rank === 'Tốt' ? 'secondary' :
+                    selectedRecord.rank === 'Khá' ? 'outline' : 'destructive'
+                  }>
+                    {selectedRecord.rank}
+                  </Badge>
                 </div>
               </div>
-              
-              <Separator />
-              
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <Label className="text-sm font-medium text-muted-foreground">Trạng thái</Label>
-                  <div className="mt-1">
-                    <Badge className={statusColors[selectedRecord.status]}>
-                      {statusLabels[selectedRecord.status]}
-                    </Badge>
-                  </div>
-                </div>
-                <div>
-                  <Label className="text-sm font-medium text-muted-foreground">Ngày nộp</Label>
-                  <p>{selectedRecord.submittedAt ? new Date(selectedRecord.submittedAt).toLocaleDateString('vi-VN') : 'Chưa nộp'}</p>
-                </div>
-              </div>
-              
-              {selectedRecord.status === 'approved' && (
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <Label className="text-sm font-medium text-muted-foreground">Người duyệt</Label>
-                    <p>{selectedRecord.approvedBy}</p>
-                  </div>
-                  <div>
-                    <Label className="text-sm font-medium text-muted-foreground">Ngày duyệt</Label>
-                    <p>{selectedRecord.approvedAt ? new Date(selectedRecord.approvedAt).toLocaleDateString('vi-VN') : ''}</p>
-                  </div>
-                </div>
-              )}
-              
+
               {selectedRecord.note && (
                 <div>
-                  <Label className="text-sm font-medium text-muted-foreground">Ghi chú</Label>
-                  <p className="mt-1 text-sm bg-gray-50 p-3 rounded-lg">{selectedRecord.note}</p>
+                  <Label>Ghi chú</Label>
+                  <p className="text-sm text-muted-foreground">{selectedRecord.note}</p>
+                </div>
+              )}
+
+              {selectedRecord.evidence && selectedRecord.evidence.length > 0 && (
+                <div>
+                  <Label>Minh chứng</Label>
+                  <div className="space-y-2 mt-2">
+                    {selectedRecord.evidence.map((evidence, index) => (
+                      <div key={index} className="border rounded p-2">
+                        <p className="text-sm">{evidence}</p>
+                      </div>
+                    ))}
+                  </div>
                 </div>
               )}
             </div>
-          )}
-        </DialogContent>
-      </Dialog>
-
-      {/* Edit Record Dialog */}
-      <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
-        <DialogContent className="max-w-4xl">
-          <DialogHeader>
-            <DialogTitle>Chỉnh sửa điểm rèn luyện</DialogTitle>
-            <DialogDescription>
-              Cập nhật điểm số cho từng tiêu chí đánh giá
-            </DialogDescription>
-          </DialogHeader>
-          {selectedRecord && (
-            <div className="grid grid-cols-2 gap-6">
-              <div className="space-y-4">
-                <div className="space-y-2">
-                  <Label>Mã sinh viên</Label>
-                  <Input value={selectedRecord.studentId} disabled />
-                </div>
-                <div className="space-y-2">
-                  <Label>Tên sinh viên</Label>
-                  <Input value={selectedRecord.studentName} disabled />
-                </div>
-                <div className="grid grid-cols-2 gap-2">
-                  <div className="space-y-2">
-                    <Label>Học kỳ</Label>
-                    <Input value={selectedRecord.semester} disabled />
-                  </div>
-                  <div className="space-y-2">
-                    <Label>Năm học</Label>
-                    <Input value={selectedRecord.academicYear} disabled />
-                  </div>
-                </div>
-              </div>
-              
-              <div className="space-y-4">
-                <div className="space-y-3">
-                  <div className="space-y-2">
-                    <Label>1. Ý thức học tập (0-25 điểm)</Label>
-                    <Input
-                      type="number"
-                      min="0"
-                      max="25"
-                      value={selectedRecord.category1}
-                      onChange={(e) => setSelectedRecord({...selectedRecord, category1: parseInt(e.target.value) || 0})}
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label>2. Ý thức và hiệu quả trong học tập (0-25 điểm)</Label>
-                    <Input
-                      type="number"
-                      min="0"
-                      max="25"
-                      value={selectedRecord.category2}
-                      onChange={(e) => setSelectedRecord({...selectedRecord, category2: parseInt(e.target.value) || 0})}
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label>3. Ý thức chấp hành nội quy (0-25 điểm)</Label>
-                    <Input
-                      type="number"
-                      min="0"
-                      max="25"
-                      value={selectedRecord.category3}
-                      onChange={(e) => setSelectedRecord({...selectedRecord, category3: parseInt(e.target.value) || 0})}
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label>4. Tham gia hoạt động (0-20 điểm)</Label>
-                    <Input
-                      type="number"
-                      min="0"
-                      max="20"
-                      value={selectedRecord.category4}
-                      onChange={(e) => setSelectedRecord({...selectedRecord, category4: parseInt(e.target.value) || 0})}
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label>5. Phẩm chất công dân (0-20 điểm)</Label>
-                    <Input
-                      type="number"
-                      min="0"
-                      max="20"
-                      value={selectedRecord.category5}
-                      onChange={(e) => setSelectedRecord({...selectedRecord, category5: parseInt(e.target.value) || 0})}
-                    />
-                  </div>
-                  <div className="bg-gray-50 p-3 rounded-lg">
-                    <div className="flex justify-between items-center">
-                      <span className="font-medium">Tổng điểm:</span>
-                      <Badge variant={calculateTotal(selectedRecord) >= 100 ? "default" : "secondary"}>
-                        {calculateTotal(selectedRecord)}/115 - {calculateRank(calculateTotal(selectedRecord))}
-                      </Badge>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
-          
-          <div className="space-y-2">
-            <Label htmlFor="edit-note">Ghi chú</Label>
-            <Textarea
-              id="edit-note"
-              value={selectedRecord?.note || ''}
-              onChange={(e) => selectedRecord && setSelectedRecord({...selectedRecord, note: e.target.value})}
-              placeholder="Ghi chú thêm về quá trình đánh giá..."
-              rows={3}
-            />
-          </div>
-          
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setIsEditDialogOpen(false)}>
-              Hủy
-            </Button>
-            <Button onClick={handleEditRecord}>
-              Cập nhật
+          )}          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsViewDialogOpen(false)}>
+              Đóng
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -1516,6 +1904,7 @@ const QuanLyDRL = () => {
 };
 
 export default QuanLyDRL;
+
 
 
 

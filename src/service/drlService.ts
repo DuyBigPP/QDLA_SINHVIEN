@@ -34,12 +34,11 @@ class DRLService {
       return this.getMockCriteria();
     }
   }
-
   // Cập nhật điểm cho subcriteria
   async updateSubcriteriaScore(request: DRLUpdateRequest): Promise<boolean> {
     try {
       console.log('Updating subcriteria score:', request);
-      const result = await ApiService.put(UPDATE_CRITERIA, request);
+      const result = await ApiService.put(UPDATE_USER_SUBCRITERIA, request);
       
       if (result.success) {
         console.log('Subcriteria score updated successfully');

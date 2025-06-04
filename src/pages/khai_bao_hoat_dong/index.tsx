@@ -11,8 +11,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, Dialog
 import { toast } from 'sonner';
 import { Plus, Eye, Check, X, Upload, Download, Paperclip, FileText } from 'lucide-react';
 import { format } from 'date-fns';
-import { EvidenceService } from '@/service/evidenceService';
-import { subcriteriaService, type SubCriteriaItem } from '@/service/subcriteriaService';
+import { type SubCriteriaItem } from '@/service/subcriteriaService';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Progress } from '@/components/ui/progress';
 
@@ -42,6 +41,158 @@ const statusLabels = {
   rejected: 'Từ chối'
 };
 
+// Mock data for subcriteria
+const mockSubcriteria: SubCriteriaItem[] = [
+  {
+    id: 1,
+    criteria_id: 1,
+    name: "Ý thức và thái độ trong học tập",
+    editable: true,
+    required_evidence: true,
+    min_score: 0,
+    max_score: 3
+  },
+  {
+    id: 2,
+    criteria_id: 1,
+    name: "Kết quả học tập trong kỳ học",
+    editable: true,
+    required_evidence: false,
+    min_score: 0,
+    max_score: 10
+  },
+  {
+    id: 4,
+    criteria_id: 1,
+    name: "Ý thức và thái độ tham gia các hoạt động ngoại khóa",
+    editable: true,
+    required_evidence: true,
+    min_score: 0,
+    max_score: 2
+  },
+  {
+    id: 8,
+    criteria_id: 2,
+    name: "Tham gia hiến máu nhân đạo",
+    editable: true,
+    required_evidence: true,
+    min_score: 0,
+    max_score: 3
+  },
+  {
+    id: 9,
+    criteria_id: 2,
+    name: "Tham gia hoạt động tình nguyện",
+    editable: true,
+    required_evidence: true,
+    min_score: 0,
+    max_score: 5
+  },
+  {
+    id: 11,
+    criteria_id: 3,
+    name: "Tham gia cuộc thi học thuật",
+    editable: true,
+    required_evidence: true,
+    min_score: 0,
+    max_score: 10
+  },
+  {
+    id: 15,
+    criteria_id: 4,
+    name: "Thành tích trong hoạt động văn hóa thể thao",
+    editable: true,
+    required_evidence: true,
+    min_score: 0,
+    max_score: 8
+  }
+];
+
+// Mock data for activities
+const mockActivities: Activity[] = [
+  {
+    id: 1,
+    studentId: "2", // Match common user ID
+    studentName: "Nguyễn Văn Đạt",
+    description: "Tham gia hiến máu nhân đạo tại trường đại học",
+    status: 'approved',
+    file_url: "/mock/evidence/hien_mau_certificate.pdf",
+    subcriteria_id: 8,
+    semester: 20242,
+    created_at: "2024-11-15T08:30:00Z",
+    updated_at: "2024-11-16T09:15:00Z"
+  },
+  {
+    id: 2,
+    studentId: "2", // Match common user ID
+    studentName: "Nguyễn Văn Đạt",
+    description: "Tham gia hoạt động tình nguyện dọn dẹp môi trường",
+    status: 'pending',
+    file_url: "/mock/evidence/tinh_nguyen_photo.jpg",
+    subcriteria_id: 9,
+    semester: 20242,
+    created_at: "2024-12-01T10:00:00Z"
+  },
+  {
+    id: 3,
+    studentId: "3",
+    studentName: "Trần Thị Duy",
+    description: "Đạt giải nhì cuộc thi lập trình cấp khoa",
+    status: 'approved',
+    file_url: "/mock/evidence/giai_lap_trinh.pdf",
+    subcriteria_id: 11,
+    semester: 20242,
+    created_at: "2024-11-20T14:30:00Z",
+    updated_at: "2024-11-21T16:45:00Z"
+  },
+  {
+    id: 4,
+    studentId: "4",
+    studentName: "Lê Văn Cường",
+    description: "Tham gia đội bóng đá khoa và đạt giải ba",
+    status: 'pending',
+    file_url: "/mock/evidence/the_thao_certificate.jpg",
+    subcriteria_id: 15,
+    semester: 20242,
+    created_at: "2024-12-03T16:20:00Z"
+  },
+  {
+    id: 5,
+    studentId: "2", // Match common user ID
+    studentName: "Nguyễn Văn Đạt",
+    description: "Tham gia câu lạc bộ học thuật và hoạt động tích cực",
+    status: 'rejected',
+    file_url: "/mock/evidence/clb_hoc_thuat.pdf",
+    subcriteria_id: 4,
+    semester: 20242,
+    created_at: "2024-11-25T11:15:00Z",
+    updated_at: "2024-11-26T13:30:00Z"
+  },
+  {
+    id: 6,
+    studentId: "5",
+    studentName: "Phạm Thị Dung",
+    description: "Tham gia hoạt động tình nguyện mùa hè xanh",
+    status: 'approved',
+    file_url: "/mock/evidence/mua_he_xanh.png",
+    subcriteria_id: 9,
+    semester: 20242,
+    created_at: "2024-11-30T09:45:00Z",
+    updated_at: "2024-12-01T08:20:00Z"
+  },
+  {
+    id: 7,
+    studentId: "6",
+    studentName: "Hoàng Văn Em",
+    description: "Tham gia cuộc thi nghiên cứu khoa học sinh viên",
+    status: 'pending',
+    file_url: "/mock/evidence/nghien_cuu_khoa_hoc.pdf",
+    subcriteria_id: 11,
+    semester: 20242,
+    created_at: "2024-12-02T13:10:00Z"
+  }
+];
+
 const KhaiBaoHoatDong = () => {
   const { user } = useAuth();
   const [activities, setActivities] = useState<Activity[]>([]);
@@ -62,58 +213,35 @@ const KhaiBaoHoatDong = () => {
     description: '',
     subcriteria_id: 0,
     evidenceFile: undefined as File | undefined
-  });
-
-  // Load criteria and subcriteria data
-  const loadSubcriteriaData = useCallback(async () => {
+  });  // Load criteria and subcriteria data
+  const loadSubcriteriaData = useCallback(() => {
     try {
-      const data = await subcriteriaService.getAllSubcriteria(currentSemester);
-      if (data) {
-        setSubcriteriaList(data.subcriteria);
-      }
+      // Use mock data instead of API call
+      setSubcriteriaList(mockSubcriteria);
+      toast.success('Đã tải dữ liệu tiêu chí (mock data)');
     } catch (error) {
       console.error('Error loading subcriteria data:', error);
       toast.error('Không thể tải dữ liệu tiêu chí');
     }
-  }, [currentSemester]);
+  }, []);
 
   // Fetch evidences from API
-  const fetchEvidences = useCallback(async () => {
+  const fetchEvidences = useCallback(() => {
     setIsLoading(true);
     try {
-      const response = await EvidenceService.getEvidence({
-        semester: currentSemester
-        // Note: API doesn't support student_id filter, so we filter client-side
-      });
+      // Use mock data instead of API call
+      const filteredMockActivities = mockActivities.filter(activity => 
+        activity.semester === currentSemester
+      );
       
-      if (response.success && response.data) {
-        const evidences = response.data;
-        // Map API evidence data to our Activity interface
-        const evidenceActivities = evidences.map((evidence): Activity => ({
-          id: evidence.id,
-          studentId: evidence.user_id?.toString() || '1',
-          studentName: 'Sinh viên', // This should be retrieved from another API if needed
-          description: evidence.description,
-          status: evidence.status || 'pending',
-          file_url: evidence.file_path, // Use file_path from API
-          subcriteria_id: evidence.subcriteria_id,
-          semester: evidence.semester,
-          created_at: evidence.created_at || new Date().toISOString(),
-          updated_at: evidence.updated_at
-        }));
-        
-        setActivities(evidenceActivities);
-        toast.success(`Đã tải ${evidenceActivities.length} minh chứng`);
-      } else {
-        toast.error('Không thể lấy dữ liệu minh chứng: ' + response.message);
-        // Fallback to empty array if API fails
-        setActivities([]);
-      }
+      setActivities(filteredMockActivities);
+      toast.success(`Đã tải ${filteredMockActivities.length} minh chứng (mock data)`);
     } catch (error) {
       console.error('Error fetching evidences:', error);
       toast.error('Đã xảy ra lỗi khi lấy dữ liệu minh chứng');
       // Fallback to empty array if API fails
-      setActivities([]);    } finally {
+      setActivities([]);
+    } finally {
       setIsLoading(false);
     }
   }, [currentSemester]);
@@ -167,8 +295,7 @@ const KhaiBaoHoatDong = () => {
         evidenceFile: file
       });
     }
-  };
-  const handleSubmitActivity = async (e: React.FormEvent) => {
+  };  const handleSubmitActivity = async (e: React.FormEvent) => {
     e.preventDefault();
     
     if (!newActivity.description || !newActivity.subcriteria_id || !newActivity.evidenceFile) {
@@ -182,39 +309,40 @@ const KhaiBaoHoatDong = () => {
     try {
       setUploadProgress(30);
       
-      // Submit evidence to API using subcriteria_id directly
-      const evidenceData = {
-        subcriteria_id: newActivity.subcriteria_id,
-        semester: currentSemester,
-        description: newActivity.description
-      };
-      
+      // Simulate API call with mock data
       setUploadProgress(50);
       
-      const response = await EvidenceService.submitEvidence(evidenceData, newActivity.evidenceFile);
+      // Simulate delay
+      await new Promise(resolve => setTimeout(resolve, 1000));
       
       setUploadProgress(90);
       
-      if (response.success && response.data) {
-        toast.success('Minh chứng đã được tải lên thành công');
-        
-        // Reset form
-        setNewActivity({
-          description: '',
-          subcriteria_id: 0,
-          evidenceFile: undefined
-        });
-        
-        setIsDialogOpen(false);
-        
-        // Refresh evidence list
-        setTimeout(() => {
-          fetchEvidences();
-        }, 1000);
-      } else {
-        toast.error('Không thể tải lên minh chứng: ' + response.message);
-      }
-
+      // Create new mock activity
+      const newMockActivity: Activity = {
+        id: Date.now(), // Use timestamp as ID
+        studentId: user?.id || "SV001",
+        studentName: user?.username || "Sinh viên",
+        description: newActivity.description,
+        status: 'pending',
+        file_url: `/mock/evidence/${newActivity.evidenceFile.name}`,
+        subcriteria_id: newActivity.subcriteria_id,
+        semester: currentSemester,
+        created_at: new Date().toISOString()
+      };
+      
+      // Add to activities list
+      setActivities(prev => [newMockActivity, ...prev]);
+      
+      toast.success('Minh chứng đã được tải lên thành công (mock data)');
+      
+      // Reset form
+      setNewActivity({
+        description: '',
+        subcriteria_id: 0,
+        evidenceFile: undefined
+      });
+      
+      setIsDialogOpen(false);
       setUploadProgress(100);
     } catch (error) {
       console.error('Error submitting evidence:', error);
@@ -224,26 +352,22 @@ const KhaiBaoHoatDong = () => {
       setUploadProgress(0);
     }
   };
-
   const handleApproveActivity = async (activityId: string | number) => {
     setIsLoading(true);
     try {
-      const response = await EvidenceService.verifyEvidence(Number(activityId), 'approved');
+      // Simulate API call with mock data
+      await new Promise(resolve => setTimeout(resolve, 500));
       
-      if (response.success) {
-        setActivities(activities.map(activity => 
-          activity.id === activityId 
-            ? { ...activity, status: 'approved' }
-            : activity
-        ));
-        toast.success('Đã phê duyệt minh chứng');
-        
-        // Close view dialog if open
-        if (isViewDialogOpen && selectedActivity?.id === activityId) {
-          setIsViewDialogOpen(false);
-        }
-      } else {
-        toast.error('Không thể phê duyệt: ' + response.message);
+      setActivities(activities.map(activity => 
+        activity.id === activityId 
+          ? { ...activity, status: 'approved', updated_at: new Date().toISOString() }
+          : activity
+      ));
+      toast.success('Đã phê duyệt minh chứng (mock data)');
+      
+      // Close view dialog if open
+      if (isViewDialogOpen && selectedActivity?.id === activityId) {
+        setIsViewDialogOpen(false);
       }
     } catch (error) {
       console.error('Error approving activity:', error);
@@ -256,22 +380,19 @@ const KhaiBaoHoatDong = () => {
   const handleRejectActivity = async (activityId: string | number) => {
     setIsLoading(true);
     try {
-      const response = await EvidenceService.verifyEvidence(Number(activityId), 'rejected');
+      // Simulate API call with mock data
+      await new Promise(resolve => setTimeout(resolve, 500));
       
-      if (response.success) {
-        setActivities(activities.map(activity => 
-          activity.id === activityId 
-            ? { ...activity, status: 'rejected' }
-            : activity
-        ));
-        toast.success('Đã từ chối minh chứng');
-        
-        // Close view dialog if open
-        if (isViewDialogOpen && selectedActivity?.id === activityId) {
-          setIsViewDialogOpen(false);
-        }
-      } else {
-        toast.error('Không thể từ chối: ' + response.message);
+      setActivities(activities.map(activity => 
+        activity.id === activityId 
+          ? { ...activity, status: 'rejected', updated_at: new Date().toISOString() }
+          : activity
+      ));
+      toast.success('Đã từ chối minh chứng (mock data)');
+      
+      // Close view dialog if open
+      if (isViewDialogOpen && selectedActivity?.id === activityId) {
+        setIsViewDialogOpen(false);
       }
     } catch (error) {
       console.error('Error rejecting activity:', error);

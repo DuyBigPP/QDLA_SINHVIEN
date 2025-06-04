@@ -1,5 +1,5 @@
 import { ApiService } from './apiService';
-import { UPDATE_CRITERIA } from './endpoint/endpoint';
+import { UPDATE_USER_SUBCRITERIA } from './endpoint/endpoint';
 
 export interface Criteria {
   id: number;
@@ -64,11 +64,10 @@ class CriteriaService {  // Lấy danh sách criteria theo semester
       // Fallback to mock data if API fails
       return this.getMockCriteria();
     }
-  }
-  // Cập nhật điểm cho criteria
+  }  // Cập nhật điểm cho criteria
   async updateCriteria(request: UpdateCriteriaRequest): Promise<boolean> {
     try {
-      const result = await ApiService.put(UPDATE_CRITERIA, request);
+      const result = await ApiService.put(UPDATE_USER_SUBCRITERIA, request);
       return result.success;
     } catch (error) {
       console.error('Error updating criteria:', error);

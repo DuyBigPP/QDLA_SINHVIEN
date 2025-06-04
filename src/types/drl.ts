@@ -27,7 +27,7 @@ export interface DRLCriteriaResponse {
 }
 
 export interface DRLUpdateRequest {
-  id: number;
+  subcriteria_id: number;
   score: number;
   semester: number;
   user_id: number;

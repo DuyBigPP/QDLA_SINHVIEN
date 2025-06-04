@@ -15,8 +15,10 @@ import Login from "@/pages/login/index.tsx"
 import QuanLyDRL from "@/pages/quan_ly_DRL/index.tsx"
 import QuanLyNguoiDung from "@/pages/quan_ly_nguoi_dung/index.tsx"
 import AdminDashboard from "@/pages/admin_dashboard/index.tsx"
-import QuanLyMinhChung from "@/pages/quan_ly_minh_chung/index.tsx"
+import PheDuyetBangDiemRenLuyen from "@/pages/quan_ly_minh_chung/index.tsx"
 import QuanLyTaiKhoan from "@/pages/quan_ly_tai_khoan/index.tsx"
+import TeacherInfo from "@/pages/teacher_info"
+import DauMucDrl from "@/pages/dau_muc_drl"
 // Protected Route Component
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { isAuthenticated } = useAuth()
@@ -144,7 +146,15 @@ export function AdminRoutes() {
             path="quan-ly-minh-chung" 
             element={
               <RoleProtectedRoute allowedRoles={['admin', 'teacher']}>
-                <QuanLyMinhChung />
+                <PheDuyetBangDiemRenLuyen />
+              </RoleProtectedRoute>
+            } 
+          />
+          <Route 
+            path="teacher-info" 
+            element={
+              <RoleProtectedRoute allowedRoles={['admin', 'teacher']}>
+                <TeacherInfo />
               </RoleProtectedRoute>
             } 
           />
@@ -158,6 +168,15 @@ export function AdminRoutes() {
               </RoleProtectedRoute>
             } 
           />
+          <Route 
+            path="dau-muc-drl" 
+            element={
+              <RoleProtectedRoute allowedRoles={['admin']}>
+                <DauMucDrl />
+              </RoleProtectedRoute>
+            } 
+          />
+
           
           {/* Legacy routes */}
           <Route path="dashboard" element={<DashboardPage />} />

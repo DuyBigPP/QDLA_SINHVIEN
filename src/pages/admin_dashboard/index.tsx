@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { DashboardService, type DashboardEvidence } from '@/service/dashboardService';
+import { type DashboardEvidence } from '@/service/dashboardService';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -50,6 +50,176 @@ const statusIcons = {
   rejected: XCircle
 };
 
+// Mock data
+const mockEvidenceCounts: EvidenceCounts = {
+  pending: 15,
+  approved: 42,
+  rejected: 8,
+  total: 65
+};
+
+const mockEvidenceData: DashboardEvidence[] = [
+  {
+    id: 1,
+    user_id: 1,
+    subcriteria_id: 8,
+    description: 'Tham gia hiến máu nhân đạo tại trường',
+    file_path: '/evidence/hien_mau_certificate.pdf',
+    status: 'pending',
+    semester: 1,
+    created_at: '2024-12-20'
+  },
+  {
+    id: 2,
+    user_id: 2,
+    subcriteria_id: 9,
+    description: 'Tham gia hoạt động tình nguyện dọn dẹp môi trường',
+    file_path: '/evidence/tinh_nguyen_photo.jpg',
+    status: 'approved',
+    semester: 1,
+    created_at: '2024-12-18',
+    updated_at: '2024-12-19'
+  },
+  {
+    id: 3,
+    user_id: 3,
+    subcriteria_id: 11,
+    description: 'Đạt giải nhì cuộc thi lập trình cấp khoa',
+    file_path: '/evidence/giai_lap_trinh.pdf',
+    status: 'approved',
+    semester: 1,
+    created_at: '2024-12-15',
+    updated_at: '2024-12-16'
+  },
+  {
+    id: 4,
+    user_id: 4,
+    subcriteria_id: 15,
+    description: 'Tham gia đội bóng đá khoa và đạt giải ba',
+    file_path: '/evidence/the_thao_certificate.jpg',
+    status: 'rejected',
+    semester: 1,
+    created_at: '2024-12-14',
+    updated_at: '2024-12-15'
+  },
+  {
+    id: 5,
+    user_id: 5,
+    subcriteria_id: 4,
+    description: 'Tham gia câu lạc bộ học thuật và hoạt động tích cực',
+    file_path: '/evidence/clb_hoc_thuat.pdf',
+    status: 'pending',
+    semester: 1,
+    created_at: '2024-12-20'
+  },
+  {
+    id: 6,
+    user_id: 6,
+    subcriteria_id: 9,
+    description: 'Tham gia hoạt động tình nguyện mùa hè xanh',
+    file_path: '/evidence/mua_he_xanh.png',
+    status: 'approved',
+    semester: 1,
+    created_at: '2024-11-30',
+    updated_at: '2024-12-01'
+  },
+  {
+    id: 7,
+    user_id: 7,
+    subcriteria_id: 11,
+    description: 'Tham gia cuộc thi nghiên cứu khoa học sinh viên',
+    file_path: '/evidence/nghien_cuu_khoa_hoc.pdf',
+    status: 'pending',
+    semester: 1,
+    created_at: '2024-12-22'
+  },
+  {
+    id: 8,
+    user_id: 8,
+    subcriteria_id: 9,
+    description: 'Hoạt động tình nguyện tại viện dưỡng lão',
+    file_path: '/evidence/tinh_nguyen_vien_duong_lao.jpg',
+    status: 'approved',
+    semester: 1,
+    created_at: '2024-12-10',
+    updated_at: '2024-12-11'
+  },
+  {
+    id: 9,
+    user_id: 9,
+    subcriteria_id: 12,
+    description: 'Thành viên ban chấp hành lớp',
+    file_path: '/evidence/ban_chap_hanh_lop.pdf',
+    status: 'approved',
+    semester: 1,
+    created_at: '2024-12-05',
+    updated_at: '2024-12-06'
+  },
+  {
+    id: 10,
+    user_id: 10,
+    subcriteria_id: 11,
+    description: 'Tham gia workshop về công nghệ AI',
+    file_path: '/evidence/workshop_ai.pdf',
+    status: 'pending',
+    semester: 1,
+    created_at: '2024-12-21'
+  },
+  {
+    id: 11,
+    user_id: 11,
+    subcriteria_id: 15,
+    description: 'Giải nhất cuộc thi thiết kế poster',
+    file_path: '/evidence/giai_nhat_poster.jpg',
+    status: 'approved',
+    semester: 1,
+    created_at: '2024-12-08',
+    updated_at: '2024-12-09'
+  },
+  {
+    id: 12,
+    user_id: 12,
+    subcriteria_id: 11,
+    description: 'Tham gia team hackathon và đạt top 5',
+    file_path: '/evidence/hackathon_top5.pdf',
+    status: 'pending',
+    semester: 1,
+    created_at: '2024-12-19'
+  },
+  {
+    id: 13,
+    user_id: 13,
+    subcriteria_id: 10,
+    description: 'Hoạt động tuyên truyền an toàn giao thông',
+    file_path: '/evidence/tuyen_truyen_atgt.jpg',
+    status: 'rejected',
+    semester: 1,
+    created_at: '2024-12-12',
+    updated_at: '2024-12-13'
+  },
+  {
+    id: 14,
+    user_id: 14,
+    subcriteria_id: 9,
+    description: 'Tổ chức sự kiện từ thiện cho trẻ em',
+    file_path: '/evidence/tu_thien_tre_em.jpg',
+    status: 'approved',
+    semester: 1,
+    created_at: '2024-12-07',
+    updated_at: '2024-12-08'
+  },
+  {
+    id: 15,
+    user_id: 15,
+    subcriteria_id: 13,
+    description: 'Thành viên CLB âm nhạc trường',
+    file_path: '/evidence/clb_am_nhac.pdf',
+    status: 'pending',
+    semester: 1,
+    created_at: '2024-12-23'
+  }
+];
+
 const AdminDashboard = () => {
   const [evidenceCounts, setEvidenceCounts] = useState<EvidenceCounts>({
     pending: 0,
@@ -64,37 +234,26 @@ const AdminDashboard = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [currentSemester, setCurrentSemester] = useState(1);
   const [filterStatus, setFilterStatus] = useState<string>('all');
-  const [searchTerm, setSearchTerm] = useState('');
-  // Load dashboard data
+  const [searchTerm, setSearchTerm] = useState('');  // Load dashboard data
   const loadDashboardData = useCallback(async () => {
     setIsLoading(true);
     try {
-      // Load evidence counts
-      const countsResponse = await DashboardService.getAllEvidenceCounts(currentSemester);
-      if (countsResponse.success && countsResponse.data) {
-        setEvidenceCounts(countsResponse.data);
-      }
-
-      // Load all evidence details
-      const evidenceResponse = await DashboardService.getAllEvidenceDetails(currentSemester);
-      if (evidenceResponse.success && evidenceResponse.data) {
-        setAllEvidence(evidenceResponse.data);
-        setFilteredEvidence(evidenceResponse.data);
-      }
-
-      if (countsResponse.success || evidenceResponse.success) {
-        toast.success('Tải dữ liệu dashboard thành công');
-      } else {
-        toast.error('Không thể tải dữ liệu dashboard');
-      }
+      // Simulate API delay
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
+      // Use mock data
+      setEvidenceCounts(mockEvidenceCounts);
+      setAllEvidence(mockEvidenceData);
+      setFilteredEvidence(mockEvidenceData);
+      
+      toast.success('Tải dữ liệu dashboard thành công');
     } catch (error) {
       console.error('Error loading dashboard data:', error);
       toast.error('Lỗi khi tải dữ liệu dashboard');
     } finally {
       setIsLoading(false);
     }
-  }, [currentSemester]);
-  // Filter evidence based on status and search term
+  }, []);  // Filter evidence based on status and search term
   useEffect(() => {
     let filtered = allEvidence;
 
@@ -110,7 +269,7 @@ const AdminDashboard = () => {
     }
 
     setFilteredEvidence(filtered);
-  }, [allEvidence, filterStatus, searchTerm]);  // Load data on component mount and semester change
+  }, [allEvidence, filterStatus, searchTerm]);// Load data on component mount and semester change
   useEffect(() => {
     loadDashboardData();
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -144,7 +303,7 @@ const AdminDashboard = () => {
       {/* Header */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Admin Dashboard</h1>
+          <h1 className="text-3xl font-bold tracking-tight">Dashboard</h1>
           <p className="text-muted-foreground">
             Quản lý và thống kê minh chứng rèn luyện của sinh viên
           </p>
